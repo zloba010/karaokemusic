@@ -1,0 +1,2857 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#4a3728">
+<title>Караоке — Kizamia</title>
+<style>
+:root{ --radius:16px; --ease:cubic-bezier(.2,.7,.3,1); --kfs:1; }
+
+[data-theme="light"]{
+  --bg:#e6e2db; --bg-2:#ded9d1; --surface:#f4f2ed; --surface-2:#ebe8e2;
+  --text:#2b2018; --text-dim:#7d6c5b; --accent:#4a3728; --accent-2:#6d5442;
+  --on-accent:#f4f2ed; --border:#d2ccc3;
+  --shadow:0 8px 26px rgba(74,55,40,.14); --overlay:rgba(43,32,24,.45);
+  --tag-bg:rgba(74,55,40,.10);
+  --ext-on:#4caf50; --ext-on-bg:rgba(76,175,80,.12); --ext-off:#f59e0b; --ext-off-bg:rgba(245,158,11,.12);
+  --karaoke-bg:linear-gradient(135deg, #1a1612 0%, #2b2018 100%);
+  --karaoke-text:#eae6df; --karaoke-dim:#6b5d4f;
+}
+[data-theme="dark"]{
+  --bg:#17110d; --bg-2:#100c09; --surface:#241c16; --surface-2:#2f251d;
+  --text:#eae6df; --text-dim:#a2948a; --accent:#ded8ce; --accent-2:#bdb3a7;
+  --on-accent:#1c1511; --border:#3a2d23;
+  --shadow:0 8px 26px rgba(0,0,0,.5); --overlay:rgba(0,0,0,.62);
+  --tag-bg:rgba(255,255,255,.10);
+  --ext-on:#66bb6a; --ext-on-bg:rgba(102,187,106,.15); --ext-off:#f59e0b; --ext-off-bg:rgba(245,158,11,.15);
+  --karaoke-bg:linear-gradient(135deg, #0a0705 0%, #1a120c 100%);
+  --karaoke-text:#f4f2ed; --karaoke-dim:#5a4a3c;
+}
+[data-theme="glass"]{
+  --bg:transparent; --bg-2:rgba(255,255,255,0.15);
+  --surface:rgba(255,255,255,0.18); --surface-2:rgba(255,255,255,0.28);
+  --text:#2d3748; --text-dim:#64748b; --accent:#4299e1; --accent-2:#3182ce;
+  --on-accent:#ffffff; --border:rgba(255,255,255,0.7);
+  --shadow:0 8px 32px rgba(0,0,0,0.08); --overlay:rgba(45,55,72,0.35);
+  --tag-bg:rgba(66,153,225,.15);
+  --ext-on:#38a169; --ext-on-bg:rgba(56,161,105,.15); --ext-off:#ed8936; --ext-off-bg:rgba(237,137,54,.15);
+  --karaoke-bg:linear-gradient(135deg, rgba(30,41,59,0.96) 0%, rgba(15,23,42,0.98) 100%);
+  --karaoke-text:#f7fafc; --karaoke-dim:#718096;
+}
+[data-theme="glass"] body{
+  background:
+    radial-gradient(circle at 20% 30%, #ffffff 0%, transparent 40%),
+    radial-gradient(circle at 80% 70%, #b8d4e3 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, #f0f4f8 0%, transparent 60%),
+    linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  background-size:150% 150%;
+  animation:glassBG 20s ease-in-out infinite alternate;
+  background-attachment:fixed;
+}
+@keyframes glassBG{ 0%{background-position:0% 0%} 100%{background-position:100% 100%} }
+
+*,*::before,*::after{ box-sizing:border-box; }
+[hidden]{ display:none !important; }
+html,body{ margin:0; padding:0; height:100%; }
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; overflow:hidden; overscroll-behavior:none;
+  transition:background .25s var(--ease), color .25s var(--ease);
+}
+button{ font:inherit; color:inherit; background:none; border:none; cursor:pointer; }
+input, textarea{ font:inherit; }
+
+#app{ position:fixed; inset:0; display:flex; flex-direction:column; }
+.view{ position:absolute; inset:0; display:none; flex-direction:column; }
+.view.active{ display:flex; }
+
+#view-library{ background:var(--bg); }
+.lib-header{
+  flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:16px 20px 14px;
+  border-bottom:1px solid var(--border); background:var(--bg);
+}
+[data-theme="glass"] .lib-header{
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+  border-color:rgba(255,255,255,0.7);
+  box-shadow:0 4px 20px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+.brand-mark{
+  width:40px; height:40px; border-radius:12px; flex:0 0 auto;
+  background:var(--accent); color:var(--on-accent);
+  display:grid; place-items:center; font-size:18px;
+}
+[data-theme="glass"] .brand-mark{
+  background:#4299e1; color:#fff;
+  box-shadow:0 4px 16px rgba(66,153,225,0.35), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+.brand h1{ font-size:18px; margin:0; letter-spacing:.3px; }
+.brand p{ margin:1px 0 0; font-size:12px; color:var(--text-dim); }
+.header-actions{ display:flex; align-items:center; gap:6px; flex:0 0 auto; }
+.icon-btn{
+  width:42px; height:42px; border-radius:12px;
+  display:grid; place-items:center; font-size:17px; line-height:1;
+  color:var(--text); flex:0 0 auto;
+  transition:background .15s, transform .1s;
+}
+.icon-btn:hover{ background:var(--surface-2); }
+.icon-btn:active{ transform:scale(.93); }
+.icon-btn:disabled{ opacity:.35; pointer-events:none; }
+.btn-primary{
+  display:inline-flex; align-items:center; gap:8px;
+  height:42px; padding:0 18px; border-radius:12px;
+  background:var(--accent); color:var(--on-accent);
+  font-weight:600; font-size:14px;
+  transition:transform .12s var(--ease), filter .15s;
+}
+.btn-primary:hover{ filter:brightness(1.08); }
+.btn-primary:active{ transform:scale(.97); }
+[data-theme="glass"] .btn-primary{
+  background:#4299e1; color:#fff;
+  box-shadow:0 4px 16px rgba(66,153,225,0.35), inset 0 1px 0 rgba(255,255,255,0.35);
+}
+
+.ext-banner{
+  flex:0 0 auto; padding:10px 20px;
+  display:flex; align-items:center; gap:10px;
+  font-size:13px; font-weight:600;
+  background:var(--ext-off-bg); color:var(--text);
+  border-bottom:1px solid var(--border);
+}
+.ext-banner .dot{ width:8px; height:8px; border-radius:50%; flex:0 0 auto; }
+.ext-banner.off .dot{ background:var(--ext-off); animation:blinkDot 1.4s infinite; }
+.ext-banner.on{ background:var(--ext-on-bg); }
+.ext-banner.on .dot{ background:var(--ext-on); }
+.ext-banner .text{ flex:1; min-width:0; }
+.ext-banner .btn{
+  padding:5px 12px; border-radius:8px;
+  background:var(--accent); color:var(--on-accent);
+  font-size:12px; font-weight:600; flex:0 0 auto;
+}
+[data-theme="glass"] .ext-banner .btn{ background:#4299e1; color:#fff; }
+@keyframes blinkDot{ 50%{ opacity:.35; } }
+
+.lib-scroll{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; padding:16px 20px 90px; }
+
+.now-playing-card{
+  max-width:1100px; margin:0 auto 16px;
+  padding:16px 20px; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border);
+  position:relative; overflow:hidden;
+}
+[data-theme="glass"] .now-playing-card{
+  background:rgba(255,255,255,0.18);
+  border:1px solid rgba(255,255,255,0.7);
+  backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+  box-shadow:0 4px 20px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.np-header{
+  display:flex; align-items:center; gap:10px;
+  font-size:10.5px; font-weight:700; letter-spacing:.7px;
+  text-transform:uppercase; color:var(--text-dim);
+  margin-bottom:10px;
+}
+.np-header .live-dot{
+  width:8px; height:8px; border-radius:50%; background:var(--ext-on);
+  animation:blinkDot 1.4s infinite;
+}
+.np-main{ display:flex; align-items:center; gap:14px; }
+.np-cover{
+  width:52px; height:68px; border-radius:10px; flex:0 0 auto;
+  background:var(--accent); color:var(--on-accent);
+  display:grid; place-items:center; font-size:24px; font-weight:700;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.15);
+  text-transform:uppercase;
+}
+[data-theme="glass"] .np-cover{ background:#4299e1; color:#fff; }
+.np-info{ flex:1; min-width:0; }
+.np-title{ font-size:15px; font-weight:700; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.np-artist{ font-size:12.5px; color:var(--text-dim); margin-top:3px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.np-bar{
+  margin-top:10px; height:4px; border-radius:2px;
+  background:var(--tag-bg); overflow:hidden;
+}
+.np-bar-fill{
+  height:100%; background:var(--ext-on); border-radius:2px;
+  transition:width .25s linear;
+}
+.np-time{
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--text-dim);
+  font-variant-numeric:tabular-nums;
+  margin-top:6px;
+}
+.np-controls{
+  display:flex; gap:10px; justify-content:center; align-items:center;
+  margin-top:14px; padding-top:12px;
+  border-top:1px solid var(--border);
+}
+.np-controls button{
+  width:44px; height:44px; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:16px; line-height:1;
+  background:var(--surface-2); border:1px solid var(--border);
+  color:var(--text);
+  transition:background .15s, transform .1s;
+}
+.np-controls button:hover{ background:var(--border); }
+.np-controls button:active{ transform:scale(.92); }
+.np-controls #np-play{
+  width:52px; height:52px; font-size:20px;
+  background:var(--accent); color:var(--on-accent);
+  border-color:transparent;
+}
+[data-theme="glass"] .np-controls #np-play{
+  background:#4299e1; color:#fff;
+  box-shadow:0 4px 14px rgba(66,153,225,.4);
+}
+.np-actions{
+  display:flex; gap:8px; margin-top:12px;
+  flex-wrap:wrap;
+}
+.np-actions button{
+  flex:1; min-width:130px; height:42px; border-radius:11px;
+  font-size:13.5px; font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  border:1px solid var(--border); background:var(--surface-2);
+  transition:background .15s, transform .1s;
+}
+.np-actions button:hover{ background:var(--border); }
+.np-actions button:active{ transform:scale(.97); }
+.np-actions button.karaoke{
+  background:var(--accent); color:var(--on-accent); border-color:transparent;
+}
+[data-theme="glass"] .np-actions button.karaoke{ background:#4299e1; color:#fff; }
+.np-actions button.karaoke.searching,
+.btn-karaoke.searching{
+  background:var(--surface-2) !important;
+  color:var(--text) !important;
+  border:1px solid var(--border) !important;
+  box-shadow:none !important;
+  animation:btnSearchPulse 1.4s ease-in-out infinite;
+  cursor:progress;
+}
+[data-theme="glass"] .np-actions button.karaoke.searching,
+[data-theme="glass"] .btn-karaoke.searching{
+  background:rgba(255,255,255,0.28) !important;
+  color:var(--text) !important;
+  border:1px solid rgba(255,255,255,0.7) !important;
+}
+@keyframes btnSearchPulse{
+  0%,100%{opacity:1}
+  50%{opacity:.65}
+}
+
+.search-bar{
+  display:flex; align-items:center; gap:8px;
+  padding:0 20px; border-bottom:1px solid var(--border);
+  background:var(--bg); flex:0 0 auto;
+  max-height:0; overflow:hidden;
+  transition:max-height .3s var(--ease), padding .3s var(--ease), border-color .3s var(--ease);
+  border-bottom-color:transparent;
+}
+.search-bar.open{ max-height:64px; padding:10px 20px; border-bottom-color:var(--border); }
+.search-bar input{
+  flex:1; height:40px; padding:0 14px; border-radius:12px;
+  border:1px solid var(--border); background:var(--surface);
+  color:var(--text); font-size:15px; outline:none; min-width:0;
+}
+.search-bar input:focus{ border-color:var(--accent-2); }
+.search-bar button{
+  height:40px; padding:0 14px; border-radius:12px;
+  font-size:14px; font-weight:600; color:var(--text);
+}
+.search-bar button:hover{ background:var(--surface-2); }
+
+.filters-bar{ display:flex; align-items:center; gap:8px; max-width:1100px; margin:0 auto 14px; }
+.chips-scroll{
+  flex:1; min-width:0; display:flex; gap:6px;
+  overflow-x:auto; overflow-y:hidden;
+  scrollbar-width:none; -webkit-overflow-scrolling:touch; padding:2px 0;
+}
+.chips-scroll::-webkit-scrollbar{ display:none; }
+.chip{
+  flex:0 0 auto; height:34px; padding:0 14px; border-radius:17px;
+  font-size:13px; font-weight:600; color:var(--text-dim);
+  background:var(--surface); border:1px solid var(--border);
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.chip:hover{ color:var(--text); border-color:var(--accent-2); }
+.chip.active{ background:var(--accent); color:var(--on-accent); border-color:var(--accent); }
+[data-theme="glass"] .chip{
+  background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.7);
+  backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+}
+[data-theme="glass"] .chip.active{
+  background:#4299e1; color:#fff; border-color:rgba(255,255,255,0.7);
+}
+.chip .count{ font-size:11px; opacity:.7; font-weight:700; }
+.sort-btn{
+  flex:0 0 auto; height:34px; padding:0 12px; border-radius:10px;
+  font-size:12.5px; font-weight:600; color:var(--text);
+  background:var(--surface); border:1px solid var(--border);
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap;
+}
+.sort-btn:hover{ border-color:var(--accent-2); background:var(--surface-2); }
+
+.tracks-grid{
+  max-width:1100px; margin:0 auto;
+  display:grid; gap:12px;
+  grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+}
+.track-card{
+  position:relative; border-radius:var(--radius);
+  background:var(--surface); border:1px solid var(--border);
+  padding:14px 16px 12px; cursor:pointer;
+  display:flex; flex-direction:column; gap:8px;
+  min-height:96px;
+  transition:transform .15s var(--ease), box-shadow .2s var(--ease), border-color .15s;
+  overflow:hidden;
+}
+.track-card:hover{ border-color:var(--accent-2); box-shadow:var(--shadow); transform:translateY(-1px); }
+.track-card:active{ transform:scale(.995); }
+[data-theme="glass"] .track-card{
+  background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.7);
+  backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+  box-shadow:0 4px 20px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.tc-cover{
+  width:36px; height:36px; border-radius:9px;
+  background:var(--accent); color:var(--on-accent);
+  display:grid; place-items:center; font-size:16px; font-weight:700;
+  flex:0 0 auto; text-transform:uppercase;
+  box-shadow:inset 0 -2px 0 rgba(0,0,0,.15);
+}
+[data-theme="glass"] .tc-cover{ background:#4299e1; color:#fff; }
+.tc-top{ display:flex; align-items:center; gap:10px; }
+.tc-title{ font-size:14.5px; font-weight:700; line-height:1.3; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tc-artist{ font-size:12px; color:var(--text-dim); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tc-meta{
+  display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+  font-size:11px; color:var(--text-dim); margin-top:auto;
+}
+.tc-badge{
+  font-size:10px; font-weight:700; letter-spacing:.4px;
+  padding:2px 6px; border-radius:5px;
+  background:var(--tag-bg);
+  text-transform:uppercase;
+}
+.tc-badge.karaoke{ color:var(--ext-on); }
+.tc-badge.yt{ color:#c4302b; }
+.tc-badge.local{ color:#4299e1; }
+.tc-badge.ext{ color:#9c27b0; }
+.tc-del{
+  position:absolute; top:6px; right:6px;
+  width:26px; height:26px; border-radius:8px;
+  display:grid; place-items:center; font-size:13px;
+  color:var(--text-dim); opacity:0; transition:opacity .15s, background .12s;
+}
+.track-card:hover .tc-del{ opacity:.7; }
+.tc-del:hover{ opacity:1 !important; background:var(--surface-2); color:var(--text); }
+@media (hover:none){ .tc-del{ opacity:.6; } }
+
+.empty{
+  max-width:440px; margin:24px auto 0; text-align:center;
+  padding:32px 20px; border:1px dashed var(--border); border-radius:var(--radius);
+}
+.empty h2{ margin:0 0 8px; font-size:17px; }
+.empty p{ margin:0; font-size:13.5px; color:var(--text-dim); line-height:1.5; }
+.empty .btn-primary{ margin-top:18px; }
+
+#view-player{ background:var(--bg); }
+.player-header{
+  flex:0 0 auto; display:flex; align-items:center; gap:6px;
+  padding:8px 10px; background:var(--bg-2); border-bottom:1px solid var(--border);
+}
+[data-theme="glass"] .player-header{
+  background:rgba(255,255,255,0.15);
+  backdrop-filter:blur(25px); -webkit-backdrop-filter:blur(25px);
+  border-color:rgba(255,255,255,0.7);
+  box-shadow:0 4px 20px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+.player-header-title{ flex:1; min-width:0; text-align:center; font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.player-body{
+  flex:1; overflow-y:auto;
+  display:flex; flex-direction:column; align-items:center;
+  padding:32px 24px 40px; gap:20px;
+}
+.player-cover{
+  width:min(260px, 60vw); aspect-ratio:1;
+  border-radius:20px;
+  background:var(--accent); color:var(--on-accent);
+  display:grid; place-items:center; font-size:88px; font-weight:700;
+  box-shadow:inset 0 -6px 0 rgba(0,0,0,.18), 0 20px 50px rgba(0,0,0,.2);
+  text-transform:uppercase; letter-spacing:-4px;
+}
+[data-theme="glass"] .player-cover{ background:#4299e1; color:#fff; }
+.player-info{ text-align:center; max-width:100%; }
+.player-title{ margin:0; font-size:22px; font-weight:700; line-height:1.3; word-break:break-word; }
+.player-artist{ margin:6px 0 0; font-size:14px; color:var(--text-dim); }
+.player-progress{ width:100%; max-width:400px; }
+.progress-bar{ height:5px; border-radius:3px; background:var(--border); overflow:hidden; cursor:pointer; position:relative; }
+.progress-fill{ height:100%; background:var(--accent); border-radius:3px; width:0%; transition:width .1s linear; }
+[data-theme="glass"] .progress-fill{ background:#4299e1; }
+.progress-time{
+  display:flex; justify-content:space-between;
+  font-size:12px; color:var(--text-dim);
+  font-variant-numeric:tabular-nums; margin-top:8px;
+}
+.player-controls{
+  display:flex; align-items:center; gap:16px; justify-content:center;
+}
+.player-controls button{
+  width:48px; height:48px; border-radius:50%;
+  display:grid; place-items:center;
+  font-size:18px; color:var(--text);
+  background:var(--surface); border:1px solid var(--border);
+  transition:background .15s, transform .1s;
+}
+.player-controls button:hover{ background:var(--surface-2); }
+.player-controls button:active{ transform:scale(.9); }
+.player-controls button:disabled{ opacity:.35; }
+.player-controls button.btn-play{
+  width:64px; height:64px; font-size:24px;
+  background:var(--accent); color:var(--on-accent); border-color:transparent;
+}
+[data-theme="glass"] .player-controls button.btn-play{ background:#4299e1; color:#fff; }
+.btn-karaoke{
+  display:inline-flex; align-items:center; gap:8px;
+  height:52px; padding:0 24px; border-radius:14px;
+  background:var(--accent); color:var(--on-accent);
+  font-size:15px; font-weight:700;
+  transition:transform .12s, filter .15s;
+  margin-top:8px;
+}
+.btn-karaoke:hover{ filter:brightness(1.08); }
+.btn-karaoke:active{ transform:scale(.97); }
+[data-theme="glass"] .btn-karaoke{ background:#4299e1; color:#fff; box-shadow:0 4px 16px rgba(66,153,225,.4); }
+#yt-frame-container{
+  width:100%; max-width:400px;
+  aspect-ratio:16/9;
+  border-radius:12px; overflow:hidden;
+  background:#000;
+  border:1px solid var(--border);
+}
+#yt-frame-container iframe{ width:100%; height:100%; border:none; }
+
+.karaoke-overlay{
+  position:fixed; inset:0; z-index:200;
+  display:none; flex-direction:column;
+  background:var(--karaoke-bg);
+  color:var(--karaoke-text);
+  opacity:0; transition:opacity .3s var(--ease);
+}
+.karaoke-overlay.show{ display:flex; opacity:1; }
+.karaoke-overlay[data-karaoke-theme="light"]{
+  --karaoke-bg:linear-gradient(135deg, #f8f5f0 0%, #ebe8e2 100%);
+  --karaoke-text:#2b2018;
+  --karaoke-dim:#b8a898;
+  --karaoke-active-shadow:0 0 24px rgba(74,55,40,.15);
+  --karaoke-header-bg:rgba(255,255,255,.55);
+  --karaoke-header-border:rgba(0,0,0,.08);
+  --karaoke-footer-bg:rgba(255,255,255,.55);
+  --karaoke-progress-bg:rgba(0,0,0,.1);
+}
+.karaoke-overlay[data-karaoke-theme="dark"]{
+  --karaoke-bg:linear-gradient(135deg, #1a1612 0%, #0a0705 100%);
+  --karaoke-text:#f4f2ed;
+  --karaoke-dim:#5a4a3c;
+  --karaoke-active-shadow:0 0 30px rgba(255,255,255,.2);
+  --karaoke-header-bg:rgba(0,0,0,.4);
+  --karaoke-header-border:rgba(255,255,255,.08);
+  --karaoke-footer-bg:rgba(0,0,0,.4);
+  --karaoke-progress-bg:rgba(255,255,255,.15);
+}
+.karaoke-header{
+  flex:0 0 auto; display:flex; align-items:center; gap:12px;
+  padding:14px 20px; padding-top:calc(14px + env(safe-area-inset-top));
+  background:var(--karaoke-header-bg, rgba(0,0,0,.3));
+  border-bottom:1px solid var(--karaoke-header-border, rgba(255,255,255,.08));
+}
+.karaoke-header .icon-btn{ color:var(--karaoke-text); width:38px; height:38px; }
+.karaoke-header .icon-btn:hover{ background:rgba(128,128,128,.15); }
+.karaoke-title-info{ flex:1; min-width:0; text-align:center; }
+.karaoke-track-title{ font-size:16px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.karaoke-track-artist{ font-size:12px; color:var(--karaoke-dim); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.karaoke-scroll{
+  flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  padding:40vh 24px;
+  scroll-behavior:smooth;
+}
+.karaoke-scroll::-webkit-scrollbar{ width:0; }
+.karaoke-lines{ display:flex; flex-direction:column; align-items:center; gap:4px; max-width:900px; margin:0 auto; }
+.karaoke-line{
+  font-size:26px; line-height:1.4;
+  color:var(--karaoke-dim); opacity:.45;
+  padding:10px 20px; border-radius:12px;
+  text-align:center; max-width:100%;
+  transition:all .35s var(--ease);
+  transform:scale(.92);
+  font-weight:500;
+  word-break:break-word;
+}
+.karaoke-line.active{
+  color:var(--karaoke-text); opacity:1;
+  font-size:38px; font-weight:800;
+  transform:scale(1);
+  text-shadow:var(--karaoke-active-shadow, 0 0 30px rgba(255,255,255,.2));
+}
+.karaoke-line.past{ opacity:.2; }
+
+.karaoke-footer{
+  flex:0 0 auto; padding:14px 20px;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom));
+  background:var(--karaoke-footer-bg, rgba(0,0,0,.4));
+  border-top:1px solid var(--karaoke-header-border, rgba(255,255,255,.08));
+}
+.karaoke-progress-bar{
+  height:5px; border-radius:3px;
+  background:var(--karaoke-progress-bg, rgba(255,255,255,.15));
+  overflow:hidden; margin-bottom:8px;
+}
+.karaoke-progress-fill{
+  height:100%; background:#e91e63; border-radius:3px;
+  width:0%; transition:width .1s linear;
+}
+.karaoke-time{
+  display:flex; justify-content:space-between;
+  font-size:12px; color:var(--karaoke-dim);
+  font-variant-numeric:tabular-nums; font-weight:600;
+}
+.karaoke-sync{
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  margin-top:8px; padding-top:8px;
+  border-top:1px solid var(--karaoke-header-border, rgba(255,255,255,.08));
+  flex-wrap:wrap;
+}
+.karaoke-sync button{
+  height:32px; padding:0 10px; border-radius:8px;
+  font-size:12px; font-weight:600;
+  color:var(--karaoke-text);
+  background:rgba(128,128,128,.15);
+  border:1px solid var(--karaoke-header-border, rgba(255,255,255,.08));
+  transition:background .15s;
+}
+.karaoke-sync button:hover{ background:rgba(128,128,128,.25); }
+.karaoke-sync button:active{ transform:scale(.95); }
+.karaoke-sync button.primary{ background:#e91e63; color:#fff; border-color:transparent; }
+.karaoke-sync button.primary:hover{ background:#d0175a; }
+.karaoke-offset-label{
+  min-width:60px; text-align:center;
+  font-size:12px; font-weight:700;
+  color:var(--karaoke-text);
+  font-variant-numeric:tabular-nums;
+}
+
+.overlay{ position:fixed; inset:0; z-index:30; background:var(--overlay); opacity:0; pointer-events:none; transition:opacity .25s var(--ease); }
+.overlay.show{ opacity:1; pointer-events:auto; }
+[data-theme="glass"] .overlay{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+
+.sheet{
+  position:fixed; bottom:0; left:0; right:0; z-index:40;
+  background:var(--surface); border-top-left-radius:20px; border-top-right-radius:20px;
+  box-shadow:0 -8px 32px rgba(0,0,0,.18);
+  transform:translateY(100%);
+  transition:transform .3s var(--ease);
+  max-height:88vh; display:flex; flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
+  margin:0 auto; max-width:640px;
+}
+.sheet.open{ transform:translateY(0); }
+[data-theme="glass"] .sheet{
+  background:rgba(255,255,255,0.35); backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px); border:1px solid rgba(255,255,255,0.7); border-bottom:none;
+}
+.sheet-handle{ width:36px; height:4px; border-radius:2px; background:var(--border); margin:10px auto 4px; flex:0 0 auto; }
+.sheet-body{ padding:8px 12px 16px; overflow-y:auto; }
+.sheet-title{
+  font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.6px;
+  color:var(--text-dim); padding:8px 12px 4px;
+}
+.sheet-action{
+  display:flex; align-items:center; gap:14px;
+  width:100%; padding:14px 12px; border-radius:10px;
+  font-size:15px; text-align:left;
+  transition:background .12s;
+}
+.sheet-action:hover{ background:var(--surface-2); }
+.sheet-action .icon{ width:22px; height:22px; display:grid; place-items:center; font-size:17px; color:var(--text-dim); flex:0 0 auto; }
+.sheet-divider{ height:1px; background:var(--border); margin:4px 12px; }
+.sheet-field{ padding:8px 12px; }
+.sheet-field label{ display:block; font-size:12px; color:var(--text-dim); margin-bottom:6px; font-weight:600; }
+.sheet-field input{
+  width:100%; height:42px; padding:0 14px; border-radius:11px;
+  border:1px solid var(--border); background:var(--bg);
+  color:var(--text); font-size:14px; outline:none;
+}
+.sheet-field input:focus{ border-color:var(--accent-2); }
+.sheet-btn{
+  display:block; width:calc(100% - 24px); margin:12px auto 0;
+  height:46px; border-radius:12px;
+  background:var(--accent); color:var(--on-accent);
+  font-size:15px; font-weight:600;
+}
+[data-theme="glass"] .sheet-btn{ background:#4299e1; color:#fff; }
+.settings-row{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:12px; padding:12px; font-size:14px;
+}
+.segmented{ display:flex; background:var(--surface-2); border-radius:8px; padding:2px; gap:2px; }
+.segmented button{ padding:6px 12px; border-radius:6px; font-size:12px; font-weight:600; color:var(--text-dim); transition:all .12s; }
+.segmented button.active{ background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.1); }
+
+.modal{ position:fixed; inset:0; z-index:50; display:none; align-items:center; justify-content:center; background:var(--overlay); padding:20px; }
+.modal.show{ display:flex; }
+[data-theme="glass"] .modal{ backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); }
+.modal-box{
+  width:min(460px, 100%);
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:18px; padding:22px; box-shadow:var(--shadow);
+  animation:modalIn .2s var(--ease);
+  max-height: 90vh; overflow-y: auto;
+}
+@keyframes modalIn{ from{ transform:scale(.95); opacity:0; } to{ transform:scale(1); opacity:1; } }
+[data-theme="glass"] .modal-box{
+  background:rgba(255,255,255,0.30); backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px); border:1px solid rgba(255,255,255,0.7);
+}
+.modal-box h3{ margin:0 0 12px; font-size:17px; }
+.modal-box p{ margin:0 0 10px; font-size:14px; color:var(--text-dim); line-height:1.55; }
+.modal-box ol{ padding-left:20px; margin:8px 0 12px; color:var(--text-dim); font-size:13px; line-height:1.7; }
+.modal-box ol li{ margin-bottom:4px; }
+.modal-box code{
+  font-family:ui-monospace,monospace; font-size:12px;
+  background:var(--surface-2); padding:1px 5px; border-radius:4px;
+}
+.modal-box pre{
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:8px; padding:10px; font-size:11px;
+  overflow-x:auto; max-height:300px; overflow-y:auto;
+  font-family:ui-monospace,monospace; line-height:1.4;
+  white-space:pre-wrap; word-break:break-word;
+}
+.modal-actions{ display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+.modal-actions button{
+  flex:1; min-width:100px; height:44px; border-radius:12px;
+  border:1px solid var(--border); background:var(--surface-2);
+  font-size:14px; font-weight:600;
+}
+.modal-actions button.primary{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
+.modal-actions button.secondary{ background:rgba(66,153,225,.15); color:var(--accent-2); border-color:rgba(66,153,225,.3); }
+[data-theme="glass"] .modal-actions button.primary{ background:#4299e1; color:#fff; }
+[data-theme="glass"] .modal-actions button.secondary{ background:rgba(66,153,225,.25); color:#1a202c; }
+
+.lrc-modal-box{
+  width:min(720px, 100%);
+  max-height: 92vh;
+  padding:0;
+  display:flex; flex-direction:column;
+}
+.lrc-header{
+  padding:16px 20px;
+  border-bottom:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.lrc-header h3{ margin:0; font-size:16px; }
+.lrc-header-info{
+  font-size:12px; color:var(--text-dim); margin-top:2px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
+.lrc-close{
+  width:36px; height:36px; border-radius:10px;
+  display:grid; place-items:center; font-size:18px;
+  color:var(--text-dim);
+}
+.lrc-close:hover{ background:var(--surface-2); color:var(--text); }
+
+.lrc-time-bar{
+  display:flex; align-items:center; gap:10px;
+  padding:12px 20px;
+  background:var(--surface-2);
+  border-bottom:1px solid var(--border);
+}
+.lrc-time-current{
+  font-size:20px; font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+  min-width:80px;
+}
+.lrc-time-label{
+  font-size:11px; color:var(--text-dim);
+  text-transform:uppercase; letter-spacing:.5px;
+  font-weight:700;
+}
+.lrc-play-btn{
+  width:42px; height:42px; border-radius:50%;
+  background:var(--accent); color:var(--on-accent);
+  display:grid; place-items:center;
+  font-size:16px; flex:0 0 auto;
+}
+[data-theme="glass"] .lrc-play-btn{ background:#4299e1; color:#fff; }
+.lrc-spacer{ flex:1; }
+.lrc-paste-toggle{
+  height:36px; padding:0 12px; border-radius:9px;
+  font-size:12px; font-weight:600;
+  background:var(--surface); border:1px solid var(--border);
+  color:var(--text);
+}
+.lrc-paste-toggle:hover{ background:var(--border); }
+
+.lrc-paste-area{ padding:12px 20px; border-bottom:1px solid var(--border); background:var(--surface); }
+.lrc-paste-area textarea{
+  width:100%; height:120px; padding:10px 12px;
+  border-radius:10px; border:1px solid var(--border);
+  background:var(--bg); color:var(--text);
+  font-family:ui-monospace,monospace; font-size:13px;
+  outline:none; resize:vertical;
+}
+.lrc-paste-area textarea:focus{ border-color:var(--accent-2); }
+.lrc-paste-actions{ display:flex; gap:8px; margin-top:8px; justify-content:flex-end; }
+.lrc-paste-actions button{
+  height:36px; padding:0 14px; border-radius:9px;
+  font-size:13px; font-weight:600;
+  border:1px solid var(--border); background:var(--surface-2);
+}
+.lrc-paste-actions button.primary{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
+[data-theme="glass"] .lrc-paste-actions button.primary{ background:#4299e1; color:#fff; }
+
+.lrc-lines-scroll{ flex:1; overflow-y: auto; padding: 8px 12px 12px; }
+.lrc-lines-empty{ text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13.5px; line-height: 1.6; }
+.lrc-line-row{
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-radius: 10px; margin-bottom: 4px;
+  transition: background .15s;
+}
+.lrc-line-row:hover{ background: var(--surface-2); }
+.lrc-line-num{
+  width: 32px; flex: 0 0 auto;
+  font-size: 11px; font-weight: 700;
+  color: var(--text-dim);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lrc-line-time{
+  width: 80px; height: 34px; flex: 0 0 auto;
+  padding: 0 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg); color: var(--text);
+  font-size: 13px; font-family: ui-monospace, monospace;
+  text-align: center;
+  outline: none;
+}
+.lrc-line-time:focus{ border-color: var(--accent-2); }
+.lrc-line-text{
+  flex: 1; height: 34px;
+  padding: 0 10px; border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg); color: var(--text);
+  font-size: 13px; outline: none;
+}
+.lrc-line-text:focus{ border-color: var(--accent-2); }
+.lrc-line-mark{
+  width: 34px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center;
+  background: var(--surface-2); border: 1px solid var(--border);
+  font-size: 15px; flex: 0 0 auto;
+  transition: background .15s, transform .1s;
+}
+.lrc-line-mark:hover{ background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+.lrc-line-del{
+  width: 30px; height: 34px; border-radius: 8px;
+  display: grid; place-items: center;
+  color: var(--text-dim); font-size: 13px; flex: 0 0 auto;
+}
+.lrc-line-del:hover{ background: rgba(201,74,74,.15); color: #c94a4a; }
+
+.lrc-footer{
+  padding: 12px 20px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--border);
+  display: flex; gap: 8px; flex-wrap: wrap;
+  background: var(--surface);
+}
+.lrc-footer button{
+  flex: 1; min-width: 90px; height: 44px; border-radius: 11px;
+  font-size: 13px; font-weight: 600;
+  border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--text);
+}
+.lrc-footer button:hover{ background: var(--border); }
+.lrc-footer button.primary{ background: var(--accent); color: var(--on-accent); border-color: transparent; }
+[data-theme="glass"] .lrc-footer button.primary{ background: #4299e1; color: #fff; }
+.lrc-footer button.add{ flex: 0 0 auto; background: transparent; border-style: dashed; }
+.lrc-footer button.add:hover{ background: var(--surface-2); }
+
+.sync-wizard-box{
+  width:min(560px, 100%);
+  max-height: 92vh;
+  padding:0;
+  display:flex; flex-direction:column;
+}
+.sync-wizard-body{ padding:16px 20px; overflow-y:auto; flex:1; }
+.sync-step-title{
+  font-size:14px; font-weight:700;
+  color:var(--text); margin-bottom:10px;
+  display:flex; align-items:center; gap:8px;
+}
+.sync-step-title .num{
+  display:inline-grid; place-items:center;
+  width:22px; height:22px; border-radius:6px;
+  background:var(--accent); color:var(--on-accent);
+  font-size:11px; font-weight:700;
+}
+[data-theme="glass"] .sync-step-title .num{ background:#4299e1; color:#fff; }
+.sync-step p{ margin:0 0 12px; font-size:13px; color:var(--text-dim); line-height:1.5; }
+.sync-textarea{
+  width:100%; height:200px; padding:10px 12px;
+  border-radius:10px; border:1px solid var(--border);
+  background:var(--bg); color:var(--text);
+  font-size:13.5px; line-height:1.5;
+  outline:none; resize:vertical;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+.sync-textarea:focus{ border-color:var(--accent-2); }
+.sync-step-actions{ display:flex; gap:8px; margin-top:14px; justify-content:flex-end; }
+.sync-step-actions button{
+  height:42px; padding:0 18px; border-radius:11px;
+  font-size:13.5px; font-weight:600;
+  border:1px solid var(--border); background:var(--surface-2);
+  color:var(--text);
+  transition:background .15s, transform .1s;
+}
+.sync-step-actions button:hover{ background:var(--border); }
+.sync-step-actions button.primary{ background:var(--accent); color:var(--on-accent); border-color:transparent; }
+.sync-step-actions button.secondary{ background:transparent; }
+[data-theme="glass"] .sync-step-actions button.primary{ background:#4299e1; color:#fff; }
+.sync-mode-list{ display:flex; flex-direction:column; gap:8px; }
+.sync-mode{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 16px; border-radius:12px;
+  border:1px solid var(--border); background:var(--surface-2);
+  color:var(--text); text-align:left;
+  transition:all .15s;
+}
+.sync-mode:hover{ border-color:var(--accent-2); background:var(--surface); transform:translateY(-1px); }
+.sync-mode-icon{ font-size:26px; flex:0 0 auto; width:36px; text-align:center; }
+.sync-mode-info{ flex:1; min-width:0; }
+.sync-mode-name{ font-size:14px; font-weight:700; }
+.sync-mode-desc{ font-size:11.5px; color:var(--text-dim); margin-top:2px; line-height:1.35; }
+.sync-time-big{
+  font-size:52px; font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text); text-align:center;
+  padding:24px 0; letter-spacing:-1px;
+}
+.sync-progress-bar{ height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-top:16px; }
+.sync-progress-fill{ height:100%; background:var(--accent); width:0%; transition:width .2s; }
+[data-theme="glass"] .sync-progress-fill{ background:#4299e1; }
+.sync-result-preview{
+  max-height:240px; overflow-y:auto;
+  background:var(--surface-2); border:1px solid var(--border);
+  border-radius:10px; padding:10px 14px;
+  font-size:12px; line-height:1.7;
+  font-family:ui-monospace,monospace;
+  white-space:pre-wrap; word-break:break-word;
+}
+.sync-result-preview .row{ display:flex; gap:10px; }
+.sync-result-preview .time{ color:var(--text-dim); flex:0 0 auto; min-width:48px; }
+.sync-result-preview .text{ flex:1; }
+
+.toast{
+  position:fixed; bottom:24px; left:50%;
+  transform:translateX(-50%) translateY(20px);
+  padding:12px 20px;
+  background:var(--accent); color:var(--on-accent);
+  border-radius:12px; font-size:14px; font-weight:600;
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
+  opacity:0; transition:opacity .25s, transform .25s;
+  z-index:100; pointer-events:none; max-width:90vw;
+  text-align:center;
+}
+[data-theme="glass"] .toast{ background:#4299e1; color:#fff; }
+.toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+.sort-menu{
+  position:fixed; z-index:60; min-width:200px;
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; box-shadow:0 12px 40px rgba(0,0,0,.15);
+  padding:6px; animation:modalIn .15s var(--ease);
+}
+[data-theme="glass"] .sort-menu{
+  background:rgba(255,255,255,0.55); backdrop-filter:blur(25px);
+  -webkit-backdrop-filter:blur(25px); border-color:rgba(255,255,255,0.9);
+}
+.sort-menu button{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:10px; width:100%; padding:9px 12px;
+  border-radius:8px; font-size:13px; color:var(--text);
+  text-align:left;
+}
+.sort-menu button:hover{ background:var(--surface-2); }
+.sort-menu button.active{ font-weight:700; }
+.sort-menu .check{ font-size:12px; color:var(--accent); opacity:0; }
+.sort-menu button.active .check{ opacity:1; }
+
+@media (max-width:620px){
+  .lib-header{ padding:12px 14px; }
+  .brand-mark{ width:36px; height:36px; border-radius:11px; font-size:16px; }
+  .brand h1{ font-size:16px; }
+  .brand p{ font-size:11px; }
+  .lib-scroll{ padding:12px 14px 90px; }
+  .btn-primary span{ display:none; }
+  .btn-primary::before{ content:"＋"; font-size:19px; font-weight:400; }
+  .btn-primary{ padding:0 14px; }
+  .header-actions .icon-btn{ width:38px; height:38px; }
+  .tracks-grid{ grid-template-columns:1fr; gap:8px; }
+  .track-card{ padding:12px 14px 10px; min-height:80px; }
+  .tc-title{ font-size:14px; }
+  .np-controls button{ width:40px; height:40px; font-size:15px; }
+  .np-controls #np-play{ width:48px; height:48px; font-size:18px; }
+  .np-actions button{ font-size:13px; min-width:110px; }
+  .player-cover{ font-size:66px; }
+  .player-title{ font-size:18px; }
+  .karaoke-line{ font-size:20px; padding:8px 12px; }
+  .karaoke-line.active{ font-size:28px; }
+  .karaoke-scroll{ padding:35vh 16px; }
+  .karaoke-header{ padding:10px 14px; }
+  .karaoke-title-info{ text-align:left; }
+  .karaoke-track-title{ font-size:14px; }
+  .karaoke-track-artist{ font-size:11px; }
+  .karaoke-sync button{ padding:0 8px; font-size:11px; }
+  .modal-box{ padding:18px; }
+  .lrc-modal-box{ padding:0; }
+  .lrc-header{ padding:14px 16px; }
+  .lrc-time-bar{ padding:10px 16px; }
+  .lrc-paste-area{ padding:10px 16px; }
+  .lrc-line-row{ padding:4px 4px; gap: 4px; }
+  .lrc-line-time{ width: 70px; font-size: 12px; }
+  .lrc-line-text{ font-size: 12px; }
+  .lrc-footer{ padding:10px 16px; }
+  .sync-wizard-box{ padding:0; }
+  .sync-wizard-body{ padding:14px 16px; }
+  .sync-time-big{ font-size:42px; padding:18px 0; }
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <main id="view-library" class="view active">
+    <header class="lib-header">
+      <div class="brand">
+        <div class="brand-mark">🎤</div>
+        <div><h1>Караоке</h1><p id="lib-subtitle">Kizamia Karaoke</p></div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-search" class="icon-btn" title="Поиск">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+        </button>
+        <button id="btn-theme" class="icon-btn" title="Тема">☾</button>
+        <button id="btn-settings" class="icon-btn" title="Настройки">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+        <button id="btn-add" class="btn-primary" title="Добавить трек"><span>＋ Трек</span></button>
+      </div>
+    </header>
+
+    <div id="ext-banner" class="ext-banner off">
+      <span class="dot"></span>
+      <span class="text">Расширение не установлено — караоке для вкладок недоступно</span>
+      <button class="btn" id="ext-howto">Как установить</button>
+    </div>
+
+    <div class="search-bar" id="search-bar">
+      <input id="search-input" placeholder="Поиск по названию или исполнителю" autocomplete="off">
+      <button id="btn-search-cancel">Отмена</button>
+    </div>
+
+    <div class="lib-scroll">
+      <div id="now-playing-card" class="now-playing-card" hidden>
+        <div class="np-header"><span class="live-dot"></span><span>Сейчас играет</span></div>
+        <div class="np-main">
+          <div class="np-cover" id="np-cover">?</div>
+          <div class="np-info">
+            <div class="np-title" id="np-title">—</div>
+            <div class="np-artist" id="np-artist">—</div>
+          </div>
+        </div>
+        <div class="np-bar"><div class="np-bar-fill" id="np-bar-fill"></div></div>
+        <div class="np-time">
+          <span id="np-time-current">0:00</span>
+          <span id="np-time-total">0:00</span>
+        </div>
+        <div class="np-controls">
+          <button id="np-prev" title="Предыдущий трек">⏮</button>
+          <button id="np-play" title="Плей/пауза">▶</button>
+          <button id="np-next" title="Следующий трек">⏭</button>
+        </div>
+        <div class="np-actions">
+          <button class="karaoke" id="np-karaoke">🎤 Караоке</button>
+          <button id="np-save">💾 Запомнить</button>
+        </div>
+      </div>
+
+      <div class="filters-bar">
+        <div class="chips-scroll" id="chips-scroll"></div>
+        <button class="sort-btn" id="sort-btn"><span id="sort-label">Дата</span><span id="sort-arrow">↓</span></button>
+      </div>
+
+      <div id="tracks-grid" class="tracks-grid"></div>
+      <div id="lib-empty" class="empty" hidden>
+        <h2>Нет треков</h2>
+        <p>Добавьте свой трек (YouTube или локальный файл).<br>Песни из других вкладок сохраняются как ссылки на источник.</p>
+        <button class="btn-primary" id="empty-add">＋ Добавить трек</button>
+      </div>
+    </div>
+  </main>
+
+  <main id="view-player" class="view">
+    <header class="player-header">
+      <button id="btn-player-back" class="icon-btn" title="Назад"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+      <div class="player-header-title">Плеер</div>
+      <button id="btn-player-more" class="icon-btn" title="Ещё">⋯</button>
+    </header>
+    <div class="player-body">
+      <div id="yt-frame-container" hidden></div>
+      <div class="player-cover" id="player-cover">?</div>
+      <div class="player-info">
+        <h2 class="player-title" id="player-title">—</h2>
+        <p class="player-artist" id="player-artist">—</p>
+      </div>
+      <div class="player-progress">
+        <div class="progress-bar" id="player-progress-bar"><div class="progress-fill" id="player-progress-fill"></div></div>
+        <div class="progress-time"><span id="player-time">0:00</span><span id="player-duration">0:00</span></div>
+      </div>
+      <div class="player-controls">
+        <button id="p-rewind" title="-5 сек">−5</button>
+        <button id="p-play" class="btn-play" title="Плей/пауза">▶</button>
+        <button id="p-forward" title="+5 сек">+5</button>
+      </div>
+      <button class="btn-karaoke" id="p-karaoke">🎤 Караоке</button>
+    </div>
+  </main>
+
+  <div class="karaoke-overlay" id="karaoke-overlay" data-karaoke-theme="dark">
+    <header class="karaoke-header">
+      <button class="icon-btn" id="karaoke-back" title="Назад">←</button>
+      <div class="karaoke-title-info">
+        <div class="karaoke-track-title" id="karaoke-track-title"></div>
+        <div class="karaoke-track-artist" id="karaoke-track-artist"></div>
+      </div>
+      <button class="icon-btn" id="karaoke-fullscreen" title="Полный экран">⛶</button>
+    </header>
+    <div class="karaoke-scroll" id="karaoke-scroll">
+      <div class="karaoke-lines" id="karaoke-lines"></div>
+    </div>
+    <footer class="karaoke-footer">
+      <div class="karaoke-progress-bar"><div class="karaoke-progress-fill" id="karaoke-progress-fill"></div></div>
+      <div class="karaoke-time"><span id="karaoke-time-current">0:00</span><span id="karaoke-time-total">0:00</span></div>
+      <div class="karaoke-sync">
+        <button id="ksync-minus1" title="Текст спешит на 1 сек">−1.0с</button>
+        <button id="ksync-minus05" title="Текст спешит на 0.5 сек">−0.5с</button>
+        <span class="karaoke-offset-label" id="ksync-label">0.0с</span>
+        <button id="ksync-plus05" title="Текст опаздывает на 0.5 сек">+0.5с</button>
+        <button id="ksync-plus1" title="Текст опаздывает на 1 сек">+1.0с</button>
+        <button id="ksync-paste" title="Вставить текст и синхронизировать">📝 Текст</button>
+        <button id="ksync-edit" class="primary" title="Редактировать текст">✎ LRC</button>
+      </div>
+    </footer>
+  </div>
+
+  <aside class="sheet" id="add-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-body">
+      <div class="sheet-title">Добавить трек</div>
+      <button class="sheet-action" data-add="yt"><span class="icon">▶</span><span>YouTube по ссылке</span></button>
+      <button class="sheet-action" data-add="file"><span class="icon">🎵</span><span>Локальный аудиофайл</span></button>
+      <div class="sheet-divider"></div>
+      <div class="sheet-field" id="yt-input-field" hidden>
+        <label>Ссылка на YouTube</label>
+        <input type="url" id="yt-url-input" placeholder="https://youtube.com/watch?v=...">
+      </div>
+      <button class="sheet-btn" id="yt-submit" hidden>Добавить</button>
+    </div>
+  </aside>
+
+  <aside class="sheet" id="settings-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-body">
+      <div class="sheet-title">Настройки</div>
+      <div class="settings-row">
+        <div>Тема сайта</div>
+        <div class="segmented" id="set-theme">
+          <button data-v="light">Светлая</button>
+          <button data-v="dark">Тёмная</button>
+          <button data-v="glass">Стекло</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>Тема караоке</div>
+        <div class="segmented" id="set-ktheme">
+          <button data-v="auto">Авто</button>
+          <button data-v="dark">Тёмная</button>
+          <button data-v="light">Светлая</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>Размер текста</div>
+        <div class="segmented" id="set-kfs">
+          <button data-v="small">Малый</button>
+          <button data-v="normal">Обычный</button>
+          <button data-v="big">Крупный</button>
+        </div>
+      </div>
+      <div class="settings-row">
+        <div>Автоскролл</div>
+        <div class="segmented" id="set-scroll">
+          <button data-v="on">Вкл</button>
+          <button data-v="off">Выкл</button>
+        </div>
+      </div>
+      <div class="sheet-divider"></div>
+      <button class="sheet-action" id="set-extension"><span class="icon">⚙</span><span>Про расширение</span></button>
+      <button class="sheet-action" id="set-diag"><span class="icon">🔍</span><span>Проверить источник</span></button>
+      <button class="sheet-action" id="set-clear"><span class="icon">🗑</span><span>Очистить все треки</span></button>
+    </div>
+  </aside>
+
+  <div class="modal" id="ext-modal">
+    <div class="modal-box">
+      <h3>Как установить расширение</h3>
+      <p>Для караоке с любой вкладки нужно расширение <b>Kizamia Karaoke Bridge</b>.</p>
+      <ol>
+        <li>Откройте <code>chrome://extensions/</code></li>
+        <li>Включите «Режим разработчика»</li>
+        <li>«Загрузить распакованное расширение»</li>
+        <li>Выберите папку <code>kizamia-karaoke-bridge</code> целиком</li>
+        <li>Обновите эту страницу</li>
+      </ol>
+      <div class="modal-actions"><button id="ext-modal-close">Понятно</button></div>
+    </div>
+  </div>
+
+  <div class="modal" id="diag-modal">
+    <div class="modal-box">
+      <h3>Диагностика источника</h3>
+      <p id="diag-summary">Запрос…</p>
+      <pre id="diag-output">Ожидание ответа…</pre>
+      <div class="modal-actions">
+        <button id="diag-close">Закрыть</button>
+        <button id="diag-copy" class="primary">Скопировать</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="lyrics-not-found-modal">
+    <div class="modal-box">
+      <h3 id="lnf-title">Текст не найден</h3>
+      <p id="lnf-text">Для этой песни не удалось найти текст.</p>
+      <div class="modal-actions" style="flex-direction:column">
+        <button id="lnf-paste" class="primary" style="flex:none;width:100%">📝 Вставить текст песни</button>
+        <button id="lnf-manual" class="secondary" style="flex:none;width:100%">📁 Загрузить готовый .lrc</button>
+        <button id="lnf-construct" style="flex:none;width:100%">✎ Открыть конструктор</button>
+        <button id="lnf-close" style="flex:none;width:100%">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="lrc-constructor-modal">
+    <div class="modal-box lrc-modal-box">
+      <div class="lrc-header">
+        <div style="min-width:0;flex:1">
+          <h3>Конструктор LRC</h3>
+          <div class="lrc-header-info" id="lrc-track-info">—</div>
+        </div>
+        <button class="lrc-close" id="lrc-close" title="Закрыть">✕</button>
+      </div>
+      <div class="lrc-time-bar">
+        <button class="lrc-play-btn" id="lrc-play" title="Плей/пауза">▶</button>
+        <div>
+          <div class="lrc-time-label">Сейчас</div>
+          <div class="lrc-time-current" id="lrc-time-current">0:00.0</div>
+        </div>
+        <div class="lrc-spacer"></div>
+        <button class="lrc-paste-toggle" id="lrc-paste-toggle">📝 Вставить текст</button>
+      </div>
+      <div class="lrc-paste-area" id="lrc-paste-area" hidden>
+        <textarea id="lrc-paste-textarea" placeholder="Вставьте текст песни построчно."></textarea>
+        <div class="lrc-paste-actions">
+          <button id="lrc-paste-cancel">Отмена</button>
+          <button id="lrc-paste-apply" class="primary">Разбить на строки</button>
+        </div>
+      </div>
+      <div class="lrc-lines-scroll" id="lrc-lines-scroll">
+        <div class="lrc-lines-empty" id="lrc-lines-empty">Нет строк. Нажмите «+ Строка» или «📝 Вставить текст».</div>
+        <div id="lrc-lines-list"></div>
+      </div>
+      <div class="lrc-footer">
+        <button class="add" id="lrc-add-line">＋ Строка</button>
+        <button id="lrc-export">⬇ .lrc</button>
+        <button id="lrc-apply" class="primary">Применить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="sync-wizard-modal">
+    <div class="modal-box sync-wizard-box">
+      <div class="lrc-header">
+        <div style="min-width:0;flex:1">
+          <h3>Синхронизация текста</h3>
+          <div class="lrc-header-info" id="sync-track-info">—</div>
+        </div>
+        <button class="lrc-close" id="sync-close" title="Закрыть">✕</button>
+      </div>
+      <div class="sync-wizard-body">
+        <div class="sync-step" id="sync-step-1">
+          <div class="sync-step-title"><span class="num">1</span>Вставьте текст песни</div>
+          <p>Каждая строка — отдельная фраза. Пустые строки игнорируются.</p>
+          <textarea class="sync-textarea" id="sync-textarea" placeholder="Первая строка песни&#10;Вторая строка&#10;Припев…"></textarea>
+          <div class="sync-step-actions">
+            <button class="primary" id="sync-next">Далее →</button>
+          </div>
+        </div>
+        <div class="sync-step" id="sync-step-2" hidden>
+          <div class="sync-step-title"><span class="num">2</span>Как синхронизировать?</div>
+          <div class="sync-mode-list">
+            <button class="sync-mode" data-mode="auto">
+              <div class="sync-mode-icon">⚡</div>
+              <div class="sync-mode-info">
+                <div class="sync-mode-name">Автоматически</div>
+                <div class="sync-mode-desc">Распределю пропорционально длине строк. Ничего делать не нужно.</div>
+              </div>
+            </button>
+            <button class="sync-mode" data-mode="anchor">
+              <div class="sync-mode-icon">🕐</div>
+              <div class="sync-mode-info">
+                <div class="sync-mode-name">С якорем</div>
+                <div class="sync-mode-desc">Вы отметите момент начала первой строки — точность выше.</div>
+              </div>
+            </button>
+            <button class="sync-mode" data-mode="vad" id="sync-mode-vad" hidden>
+              <div class="sync-mode-icon">🎤</div>
+              <div class="sync-mode-info">
+                <div class="sync-mode-name">По звуку</div>
+                <div class="sync-mode-desc">Анализ аудиофайла — 5–10 секунд. Только для локальных треков.</div>
+              </div>
+            </button>
+          </div>
+          <div class="sync-step-actions">
+            <button class="secondary" id="sync-back-1">← Назад</button>
+          </div>
+        </div>
+        <div class="sync-step" id="sync-step-anchor" hidden>
+          <div class="sync-step-title"><span class="num">🕐</span>Начало первой строки</div>
+          <p>Слушайте трек. Как только зазвучит первая строчка — нажмите кнопку.</p>
+          <div class="sync-time-big" id="sync-anchor-time">0:00.0</div>
+          <div class="sync-step-actions">
+            <button class="secondary" id="sync-anchor-cancel">← Назад</button>
+            <button class="primary" id="sync-anchor-confirm">🕐 Начать здесь</button>
+          </div>
+        </div>
+        <div class="sync-step" id="sync-step-progress" hidden>
+          <div class="sync-step-title" id="sync-progress-title">Синхронизация…</div>
+          <p id="sync-progress-desc">Пожалуйста, подождите.</p>
+          <div class="sync-progress-bar"><div class="sync-progress-fill" id="sync-progress-fill"></div></div>
+        </div>
+        <div class="sync-step" id="sync-step-result" hidden>
+          <div class="sync-step-title">✓ Готово</div>
+          <p id="sync-result-desc">Текст синхронизирован.</p>
+          <div class="sync-result-preview" id="sync-result-preview"></div>
+          <div class="sync-step-actions">
+            <button class="secondary" id="sync-result-edit">✎ Поправить</button>
+            <button class="primary" id="sync-result-apply">✓ Применить</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="overlay" id="overlay"></div>
+  <div class="toast" id="toast"></div>
+
+  <input type="file" id="audio-file-input" accept="audio/*" hidden>
+  <input type="file" id="lrc-file-input" accept=".lrc,.txt" hidden>
+</div>
+
+<script>
+"use strict";
+
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const fmtTime = (sec) => {
+  if (sec == null || !isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60), s = Math.floor(sec % 60);
+  return m + ':' + String(s).padStart(2, '0');
+};
+const fmtTimeDec = (sec) => {
+  if (sec == null || !isFinite(sec) || sec < 0) return '0:00.0';
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(1).padStart(4, '0');
+  return m + ':' + s;
+};
+const parseTimeInput = (str) => {
+  if (!str) return 0;
+  const parts = String(str).trim().split(':');
+  if (parts.length === 1){
+    const n = parseFloat(parts[0].replace(',', '.'));
+    return isFinite(n) ? n : 0;
+  }
+  const m = parseInt(parts[0], 10) || 0;
+  const s = parseFloat((parts[1] || '0').replace(',', '.')) || 0;
+  return m * 60 + s;
+};
+const LS = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+let _toastTimer = null;
+function toast(msg){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+const KEYS = {
+  library: 'kizami.karaoke.v1',
+  settings: 'kizami.karaoke.settings.v1',
+  current: 'kizami.karaoke.current.v1',
+  offsets: 'kizami.karaoke.offsets.v1'
+};
+const LYRICS_CACHE_KEY = 'kizami.karaoke.lyrics.cache.v1';
+
+let library = LS.get(KEYS.library, []);
+let settings = Object.assign({
+  theme: 'light', karaokeTheme: 'auto',
+  karaokeFontSize: 'normal', karaokeAutoscroll: 'on',
+  sortBy: 'addedAt', sortDir: 'desc', filterType: 'all'
+}, LS.get(KEYS.settings, {}));
+
+const THEME_CYCLE = ['light', 'dark', 'glass'];
+const THEME_ICONS = { light: '☾', dark: '💧', glass: '☀' };
+
+let extConnected = false;
+let extNowPlaying = null;
+let extLastUpdate = 0;
+let extNullSince = 0;
+
+let currentTrack = null;
+let playerType = null;
+let ytPlayer = null;
+let audioEl = null;
+let playerTickInterval = null;
+
+let karaokeSource = null;
+let karaokeLines = [];
+let karaokeActiveIndex = -1;
+let karaokeTickInterval = null;
+let karaokeApproximate = false;
+let karaokeUserScrolledAt = 0;
+let karaokeOffset = 0;
+let karaokeOffsetKey = '';
+let karaokeSearchToken = 0;
+let isSearchingKaraoke = false;
+
+let sortMenuEl = null;
+const bc = ('BroadcastChannel' in window) ? new BroadcastChannel('kizami') : null;
+
+// ========== THEME ==========
+function applyTheme(){
+  if (!THEME_CYCLE.includes(settings.theme)) settings.theme = 'light';
+  document.documentElement.setAttribute('data-theme', settings.theme);
+  const icon = $('#btn-theme');
+  if (icon) icon.textContent = THEME_ICONS[settings.theme] || '☾';
+  saveSettings();
+  $$('#set-theme button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.theme));
+  applyKaraokeTheme();
+}
+function applyKaraokeTheme(){
+  const el = $('#karaoke-overlay');
+  if (!el) return;
+  let t = settings.karaokeTheme || 'auto';
+  if (t === 'auto') t = (settings.theme === 'light') ? 'light' : 'dark';
+  el.setAttribute('data-karaoke-theme', t);
+}
+function cycleTheme(){
+  const i = THEME_CYCLE.indexOf(settings.theme);
+  settings.theme = THEME_CYCLE[(i + 1) % THEME_CYCLE.length];
+  applyTheme();
+}
+function saveSettings(){ LS.set(KEYS.settings, settings); }
+function saveLibrary(){ LS.set(KEYS.library, library); }
+
+// ========== OFFSETS ==========
+function getOffsets(){ try { return JSON.parse(localStorage.getItem(KEYS.offsets) || '{}'); } catch { return {}; } }
+function saveOffset(key, val){
+  try {
+    const m = getOffsets();
+    if (Math.abs(val) < 0.05) delete m[key]; else m[key] = val;
+    localStorage.setItem(KEYS.offsets, JSON.stringify(m));
+  } catch {}
+}
+function loadOffset(key){ const m = getOffsets(); return Number(m[key]) || 0; }
+function offsetKeyFor(artist, title){ return [(artist || '').toLowerCase().trim(), (title || '').toLowerCase().trim()].join('|'); }
+function setKaraokeOffset(val){
+  karaokeOffset = Math.round(val * 10) / 10;
+  if (karaokeOffsetKey) saveOffset(karaokeOffsetKey, karaokeOffset);
+  const lbl = $('#ksync-label');
+  if (lbl) lbl.textContent = (karaokeOffset > 0 ? '+' : '') + karaokeOffset.toFixed(1) + 'с';
+}
+
+// ========== EXT ==========
+let _pingTimer = null;
+function pingExtension(){ try { window.postMessage({ source: 'kizamia-site', type: 'ping-ext' }, '*'); } catch {} }
+function startExtensionDetection(){
+  pingExtension();
+  _pingTimer = setInterval(() => {
+    if (extConnected){ clearInterval(_pingTimer); _pingTimer = null; return; }
+    pingExtension();
+  }, 2000);
+  setTimeout(() => { if (!extConnected) renderExtBanner(); }, 2500);
+}
+let _lastControlFailAt = 0;
+let _diagResolve = null;
+window.addEventListener('message', (e) => {
+  if (e.source !== window) return;
+  const d = e.data;
+  if (!d || typeof d !== 'object') return;
+  if (d.source === 'kizamia-ext' && d.type === 'ext-ready'){
+    if (!extConnected){ extConnected = true; renderExtBanner(); toast('Расширение подключено'); }
+    try { window.postMessage({ source: 'kizamia-site', type: 'get-current' }, '*'); } catch {}
+    return;
+  }
+  if (d.source === 'kizamia-ext' && d.type === 'now-playing'){ applyExtNowPlaying(d.data); return; }
+  if (d.source === 'kizamia-ext' && d.type === 'control-result'){
+    if (!d.ok){
+      const now = Date.now();
+      if (now - _lastControlFailAt > 1500){ _lastControlFailAt = now; toast('Источник не поддерживает это действие'); }
+    } else console.log('[kizami] control ok:', d.action, '→', d.result);
+    return;
+  }
+  if (d.source === 'kizamia-ext' && d.type === 'diag-result'){ if (_diagResolve){ _diagResolve(d); _diagResolve = null; } return; }
+});
+function applyExtNowPlaying(data){
+  if (data && data.url && data.url === location.href) return;
+  if (!data || (!data.title && data.time == null)){
+    if (!extNullSince) extNullSince = Date.now();
+    if (extNowPlaying && (Date.now() - extNullSince) < 3000) return;
+    extNowPlaying = null;
+    renderNowPlayingCard();
+    return;
+  }
+  extNullSince = 0;
+  extNowPlaying = data;
+  extLastUpdate = Date.now();
+  renderNowPlayingCard();
+}
+function renderExtBanner(){
+  const banner = $('#ext-banner');
+  if (!banner) return;
+  banner.hidden = false;
+  banner.className = 'ext-banner ' + (extConnected ? 'on' : 'off');
+  const text = banner.querySelector('.text');
+  const btn = banner.querySelector('.btn');
+  if (extConnected){ text.textContent = 'Расширение активно — караоке доступно с любой вкладки'; btn.hidden = true; }
+  else { text.textContent = 'Расширение не установлено — караоке для вкладок недоступно'; btn.hidden = false; }
+}
+function renderNowPlayingCard(){
+  const card = $('#now-playing-card');
+  if (!card) return;
+  if (!extNowPlaying || (!extNowPlaying.title && extNowPlaying.time == null)){ card.hidden = true; return; }
+  card.hidden = false;
+  const t = extNowPlaying;
+  $('#np-cover').textContent = (t.title || '?').charAt(0).toUpperCase();
+  $('#np-title').textContent = t.title || 'Без названия';
+  $('#np-artist').textContent = t.artist || 'Неизвестный исполнитель';
+  const playBtn = $('#np-play');
+  if (playBtn){ playBtn.textContent = t.state === 'playing' ? '⏸' : '▶'; playBtn.title = t.state === 'playing' ? 'Пауза' : 'Воспроизвести'; }
+  updateNowPlayingProgress();
+}
+function updateNowPlayingProgress(){
+  if (!extNowPlaying) return;
+  const t = extNowPlaying;
+  let time = t.time || 0;
+  if (t.state === 'playing'){ const base = t.ts || extLastUpdate; if (base) time = Math.min(time + (Date.now() - base) / 1000, t.duration || Infinity); }
+  const dur = t.duration || 0;
+  const pct = dur > 0 ? Math.min(100, (time / dur) * 100) : 0;
+  const fill = $('#np-bar-fill');
+  if (fill) fill.style.width = pct + '%';
+  const cur = $('#np-time-current'), tot = $('#np-time-total');
+  if (cur) cur.textContent = fmtTime(time);
+  if (tot) tot.textContent = dur > 0 ? fmtTime(dur) : '--:--';
+}
+setInterval(updateNowPlayingProgress, 250);
+setInterval(() => {
+  if (!extConnected) return;
+  try { window.postMessage({ source: 'kizamia-site', type: 'get-current' }, '*'); } catch {}
+}, 500);
+
+// ========== KARAOKE BUTTON STATE ==========
+function updateKaraokeButtons(state){
+  const buttons = [$('#np-karaoke'), $('#p-karaoke')];
+  buttons.forEach(el => {
+    if (!el) return;
+    el.classList.remove('searching');
+    if (state === 'idle'){ el.textContent = '🎤 Караоке'; }
+    else if (state === 'searching'){ el.textContent = '🔍 Поиск…'; el.classList.add('searching'); }
+    else if (state === 'found'){ el.textContent = '✓ Открываю…'; el.classList.add('searching'); }
+    else if (state === 'notfound'){ el.textContent = '✗ Не найдено'; el.classList.add('searching'); }
+  });
+}
+
+// ========== LIBRARY ==========
+function getFilteredTracks(){
+  let list = library.slice();
+  if (settings.filterType === 'youtube') list = list.filter(t => t.source === 'youtube' && t.youtubeId);
+  else if (settings.filterType === 'local') list = list.filter(t => t.source === 'local');
+  else if (settings.filterType === 'ext') list = list.filter(t => t.source === 'ext');
+  const q = ($('#search-input')?.value || '').trim().toLowerCase();
+  if (q) list = list.filter(t => (t.title || '').toLowerCase().includes(q) || (t.artist || '').toLowerCase().includes(q));
+  const dir = settings.sortDir === 'asc' ? 1 : -1;
+  list.sort((a, b) => {
+    const by = settings.sortBy || 'addedAt';
+    if (by === 'title') return (a.title || '').localeCompare(b.title || '', 'ru') * dir;
+    if (by === 'artist') return (a.artist || '').localeCompare(b.artist || '', 'ru') * dir;
+    return ((a.addedAt || 0) - (b.addedAt || 0)) * dir;
+  });
+  return list;
+}
+function renderChips(){
+  const scroll = $('#chips-scroll');
+  if (!scroll) return;
+  scroll.innerHTML = '';
+  const addChip = (label, active, count, onClick) => {
+    const btn = document.createElement('button');
+    btn.className = 'chip' + (active ? ' active' : '');
+    btn.innerHTML = label + (count !== undefined ? ` <span class="count">${count}</span>` : '');
+    btn.addEventListener('click', onClick);
+    scroll.appendChild(btn);
+  };
+  addChip('Все', settings.filterType === 'all', library.length, () => { settings.filterType = 'all'; saveSettings(); renderLibrary(); });
+  addChip('YouTube', settings.filterType === 'youtube', library.filter(t => t.source === 'youtube' && t.youtubeId).length, () => { settings.filterType = 'youtube'; saveSettings(); renderLibrary(); });
+  addChip('Локальные', settings.filterType === 'local', library.filter(t => t.source === 'local').length, () => { settings.filterType = 'local'; saveSettings(); renderLibrary(); });
+  addChip('Из источников', settings.filterType === 'ext', library.filter(t => t.source === 'ext').length, () => { settings.filterType = 'ext'; saveSettings(); renderLibrary(); });
+}
+function renderSortLabel(){
+  const labels = { addedAt: 'Дата', title: 'Название', artist: 'Исполнитель' };
+  const l = $('#sort-label'), a = $('#sort-arrow');
+  if (l) l.textContent = labels[settings.sortBy] || 'Дата';
+  if (a) a.textContent = settings.sortDir === 'asc' ? '↑' : '↓';
+}
+function getTrackBadge(t){
+  if (t.source === 'youtube' && t.youtubeId) return '<span class="tc-badge yt">YouTube</span>';
+  if (t.source === 'local') return '<span class="tc-badge local">Локальный</span>';
+  if (t.source === 'ext'){ const host = t.sourceHost || 'источник'; return `<span class="tc-badge ext">${esc(host)}</span>`; }
+  return '<span class="tc-badge">—</span>';
+}
+function renderTracks(){
+  const grid = $('#tracks-grid');
+  const empty = $('#lib-empty');
+  if (!grid || !empty) return;
+  const tracks = getFilteredTracks();
+  grid.innerHTML = '';
+  if (!tracks.length){ grid.hidden = true; empty.hidden = false; return; }
+  grid.hidden = false; empty.hidden = true;
+  tracks.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'track-card';
+    div.innerHTML = `
+      <button class="tc-del" title="Удалить">✕</button>
+      <div class="tc-top">
+        <div class="tc-cover">${esc((t.title || '?').charAt(0).toUpperCase())}</div>
+        <div style="min-width:0">
+          <div class="tc-title">${esc(t.title || 'Без названия')}</div>
+          <div class="tc-artist">${esc(t.artist || 'Неизвестный исполнитель')}</div>
+        </div>
+      </div>
+      <div class="tc-meta">
+        ${getTrackBadge(t)}
+        ${t.lyrics ? '<span class="tc-badge karaoke">🎤 Караоке</span>' : ''}
+      </div>
+    `;
+    div.addEventListener('click', (e) => { if (e.target.closest('.tc-del')) return; openTrack(t); });
+    div.querySelector('.tc-del').addEventListener('click', (e) => { e.stopPropagation(); if (confirm(`Удалить трек «${t.title}»?`)) deleteTrack(t.id); });
+    grid.appendChild(div);
+  });
+}
+function renderLibrary(){
+  renderChips(); renderSortLabel(); renderTracks();
+  const sub = $('#lib-subtitle');
+  if (sub){ const n = library.length; sub.textContent = n === 0 ? 'Kizamia Karaoke' : `${n} ${pluralTracks(n)}`; }
+}
+function pluralTracks(n){
+  const m10 = n % 10, m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return 'трек';
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return 'трека';
+  return 'треков';
+}
+function openTrack(t){
+  if (t.source === 'ext' && t.sourceUrl){ window.open(t.sourceUrl, '_blank', 'noopener'); toast('Открываем ' + (t.sourceHost || 'источник')); return; }
+  if (t.source === 'youtube' && t.youtubeId){ openPlayer(t.id); return; }
+  if (t.source === 'local' && t.audioData){ openPlayer(t.id); return; }
+  toast('Этот трек нельзя воспроизвести напрямую');
+}
+function deleteTrack(id){
+  if (!library.find(x => x.id === id)) return;
+  library = library.filter(x => x.id !== id);
+  saveLibrary(); renderLibrary();
+  if (currentTrack && currentTrack.id === id) closePlayer();
+  toast('Удалено');
+}
+
+// ========== ADD ==========
+function openAddSheet(){
+  $('#yt-input-field').hidden = true;
+  $('#yt-submit').hidden = true;
+  $('#yt-url-input').value = '';
+  openSheet('#add-sheet');
+}
+async function addYouTube(url){
+  const id = extractYouTubeId(url);
+  if (!id){ toast('Неверная ссылка на YouTube'); return; }
+  const track = { id: uid(), source: 'youtube', youtubeId: id, title: 'YouTube ' + id, artist: 'Неизвестный исполнитель', duration: 0, addedAt: Date.now(), lyrics: null };
+  library.push(track); saveLibrary(); closeSheets(); renderLibrary(); toast('Добавлено');
+  fetchYouTubeMeta(id).then(meta => {
+    if (meta && meta.title){ track.title = meta.title; if (meta.author) track.artist = meta.author; saveLibrary(); renderLibrary(); }
+  }).catch(() => {});
+}
+async function fetchYouTubeMeta(videoId){
+  try { const res = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`); if (!res.ok) return null; return await res.json(); } catch { return null; }
+}
+function extractYouTubeId(url){
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+  return m ? m[1] : (url.length === 11 && /^[\w-]+$/.test(url) ? url : null);
+}
+async function addLocalFile(file){
+  try {
+    const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+    const parts = file.name.replace(/\.[^.]+$/, '').split(' - ');
+    const artist = parts.length >= 2 ? parts[0].trim() : '';
+    const title = parts.length >= 2 ? parts.slice(1).join(' - ').trim() : parts[0];
+    const track = { id: uid(), source: 'local', title: title || file.name, artist: artist || 'Неизвестный исполнитель', audioData: dataUrl, mimeType: file.type, addedAt: Date.now(), duration: 0, lyrics: null };
+    library.push(track); saveLibrary(); renderLibrary(); toast('Добавлено: ' + track.title);
+  } catch (e){ toast('Не удалось прочитать файл'); console.error(e); }
+}
+
+// ========== PLAYER ==========
+function openPlayer(trackId){
+  const t = library.find(x => x.id === trackId);
+  if (!t) return;
+  stopPlayer();
+  currentTrack = t;
+  $('#view-library').classList.remove('active');
+  $('#view-player').classList.add('active');
+  $('#player-cover').textContent = (t.title || '?').charAt(0).toUpperCase();
+  $('#player-title').textContent = t.title || 'Без названия';
+  $('#player-artist').textContent = t.artist || 'Неизвестный исполнитель';
+  $('#player-time').textContent = '0:00';
+  $('#player-duration').textContent = '0:00';
+  $('#player-progress-fill').style.width = '0%';
+  if (t.source === 'youtube' && t.youtubeId) initYouTubePlayer(t.youtubeId);
+  else if (t.source === 'local' && t.audioData) initAudioPlayer(t.audioData, t.mimeType);
+  broadcastNowPlaying(t);
+}
+function closePlayer(){
+  stopPlayer(); currentTrack = null;
+  $('#view-player').classList.remove('active');
+  $('#view-library').classList.add('active');
+  $('#yt-frame-container').hidden = true; $('#yt-frame-container').innerHTML = '';
+  renderLibrary();
+}
+async function loadYouTubeAPI(){
+  if (window.YT && window.YT.Player) return window.YT;
+  return new Promise((resolve) => {
+    if (!window.YT){ window.onYouTubeIframeAPIReady = () => resolve(window.YT); const tag = document.createElement('script'); tag.src = 'https://www.youtube.com/iframe_api'; document.head.appendChild(tag); }
+    else resolve(window.YT);
+  });
+}
+async function initYouTubePlayer(videoId){
+  playerType = 'youtube';
+  $('#yt-frame-container').hidden = false;
+  $('#yt-frame-container').innerHTML = '<div id="yt-player-target"></div>';
+  try {
+    const YT = await loadYouTubeAPI();
+    ytPlayer = new YT.Player('yt-player-target', {
+      height: '100%', width: '100%', videoId,
+      playerVars: { autoplay: 1, controls: 0, modestbranding: 1, rel: 0 },
+      events: {
+        onReady: (e) => { e.target.playVideo(); startPlayerTick(); },
+        onStateChange: (e) => { updatePlayButton(e.data === 1); if (e.data === 0) $('#p-play').textContent = '▶'; }
+      }
+    });
+  } catch (e){ toast('Не удалось загрузить YouTube'); }
+}
+function initAudioPlayer(dataUrl, mime){
+  playerType = 'audio';
+  $('#yt-frame-container').hidden = true;
+  if (audioEl){ audioEl.pause(); audioEl = null; }
+  audioEl = new Audio(dataUrl);
+  audioEl.addEventListener('loadedmetadata', () => { $('#player-duration').textContent = fmtTime(audioEl.duration); if (currentTrack) currentTrack.duration = audioEl.duration; });
+  audioEl.addEventListener('play', () => updatePlayButton(true));
+  audioEl.addEventListener('pause', () => updatePlayButton(false));
+  audioEl.addEventListener('ended', () => { updatePlayButton(false); $('#p-play').textContent = '▶'; });
+  audioEl.addEventListener('timeupdate', updatePlayerProgress);
+  audioEl.play().catch(() => {});
+  startPlayerTick();
+}
+function startPlayerTick(){
+  if (playerTickInterval) clearInterval(playerTickInterval);
+  playerTickInterval = setInterval(updatePlayerProgress, 100);
+}
+function updatePlayerProgress(){
+  if (!currentTrack) return;
+  let time = 0, duration = 0;
+  if (playerType === 'youtube' && ytPlayer && ytPlayer.getCurrentTime){ try { time = ytPlayer.getCurrentTime() || 0; duration = ytPlayer.getDuration() || 0; } catch {} }
+  else if (playerType === 'audio' && audioEl){ time = audioEl.currentTime || 0; duration = audioEl.duration || 0; }
+  if (duration > 0){ $('#player-progress-fill').style.width = Math.min(100, (time / duration) * 100) + '%'; $('#player-duration').textContent = fmtTime(duration); }
+  $('#player-time').textContent = fmtTime(time);
+  if (currentTrack) currentTrack._currentTime = time;
+}
+function updatePlayButton(isPlaying){ const btn = $('#p-play'); if (btn) btn.textContent = isPlaying ? '⏸' : '▶'; }
+function togglePlay(){
+  if (playerType === 'youtube' && ytPlayer){ const state = ytPlayer.getPlayerState && ytPlayer.getPlayerState(); if (state === 1) ytPlayer.pauseVideo(); else ytPlayer.playVideo(); }
+  else if (playerType === 'audio' && audioEl){ if (audioEl.paused) audioEl.play().catch(() => {}); else audioEl.pause(); }
+}
+function seekBy(delta){
+  if (playerType === 'youtube' && ytPlayer && ytPlayer.seekTo){ try { ytPlayer.seekTo(ytPlayer.getCurrentTime() + delta, true); } catch {} }
+  else if (playerType === 'audio' && audioEl){ audioEl.currentTime = clamp(audioEl.currentTime + delta, 0, audioEl.duration || 0); }
+}
+function stopPlayer(){
+  if (playerTickInterval){ clearInterval(playerTickInterval); playerTickInterval = null; }
+  if (ytPlayer){ try { ytPlayer.destroy(); } catch {} ytPlayer = null; }
+  if (audioEl){ try { audioEl.pause(); } catch {} audioEl = null; }
+  if ('mediaSession' in navigator) navigator.mediaSession.metadata = null;
+  playerType = null;
+}
+function broadcastNowPlaying(track){
+  if ('mediaSession' in navigator && track){ navigator.mediaSession.metadata = new MediaMetadata({ title: track.title || '', artist: track.artist || '', album: 'Kizamia Karaoke' }); }
+  try { bc && bc.postMessage({ type: 'karaoke-started', trackId: track.id, title: track.title, artist: track.artist }); } catch {}
+  LS.set(KEYS.current, { id: track.id, title: track.title, artist: track.artist, startedAt: Date.now() });
+}
+
+// ========== LYRICS CACHE ==========
+function getLyricsCache(){ try { return JSON.parse(localStorage.getItem(LYRICS_CACHE_KEY) || '{}'); } catch { return {}; } }
+function setLyricsCache(key, value){
+  try {
+    const cache = getLyricsCache();
+    cache[key] = { result: value, ts: Date.now() };
+    const now = Date.now();
+    for (const k in cache) if (now - cache[k].ts > 30 * 24 * 60 * 60 * 1000) delete cache[k];
+    localStorage.setItem(LYRICS_CACHE_KEY, JSON.stringify(cache));
+  } catch {}
+}
+function getLyricsCacheItem(key){
+  const cache = getLyricsCache();
+  const item = cache[key];
+  if (!item) return null;
+  if (Date.now() - item.ts > 30 * 24 * 60 * 60 * 1000) return null;
+  return item.result;
+}
+
+// ========== FETCH ==========
+function fetchWithTimeout(url, ms, opts){
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opts || {})).finally(() => clearTimeout(timer));
+}
+
+// ========== ИСТОЧНИКИ ==========
+async function tryLrclibGet(title, artist, duration){
+  if (!title || !artist) return null;
+  try {
+    const p = new URLSearchParams();
+    p.set('track_name', title); p.set('artist_name', artist);
+    if (duration) p.set('duration', Math.round(duration));
+    const res = await fetchWithTimeout(`https://lrclib.net/api/get?${p}`, 3500);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && (data.syncedLyrics || data.plainLyrics)) return data;
+  } catch {}
+  return null;
+}
+async function tryLrclibSearch(title, artist){
+  try {
+    const q = [title, artist].filter(Boolean).join(' ');
+    if (!q) return null;
+    const res = await fetchWithTimeout(`https://lrclib.net/api/search?q=${encodeURIComponent(q)}`, 3500);
+    if (!res.ok) return null;
+    const arr = await res.json();
+    if (Array.isArray(arr) && arr.length && (arr[0].syncedLyrics || arr[0].plainLyrics)) return arr[0];
+  } catch {}
+  return null;
+}
+
+const PROXIES = [
+  (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
+];
+
+async function fetchViaProxy(target, proxyFn, timeout){
+  try {
+    const res = await fetchWithTimeout(proxyFn(target), timeout || 4000);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const idx = text.indexOf('{');
+    const idx2 = text.indexOf('[');
+    let start = -1;
+    if (idx >= 0 && (idx2 < 0 || idx < idx2)) start = idx;
+    else if (idx2 >= 0) start = idx2;
+    const json = start >= 0 ? text.slice(start) : text;
+    return JSON.parse(json);
+  } catch { return null; }
+}
+
+async function tryLrclibProxyAllOrigins(title, artist, duration){
+  if (!title || !artist) return null;
+  const p = new URLSearchParams();
+  p.set('track_name', title); p.set('artist_name', artist);
+  if (duration) p.set('duration', Math.round(duration));
+  const data = await fetchViaProxy('https://lrclib.net/api/get?' + p.toString(), PROXIES[0], 4000);
+  if (data && (data.syncedLyrics || data.plainLyrics)) return data;
+  return null;
+}
+async function tryLrclibProxyCodeTabs(title, artist, duration){
+  if (!title || !artist) return null;
+  const p = new URLSearchParams();
+  p.set('track_name', title); p.set('artist_name', artist);
+  if (duration) p.set('duration', Math.round(duration));
+  const data = await fetchViaProxy('https://lrclib.net/api/get?' + p.toString(), PROXIES[1], 4000);
+  if (data && (data.syncedLyrics || data.plainLyrics)) return data;
+  return null;
+}
+
+async function tryNetEase(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://music.163.com/api/search/get/web?csrf_token=&s=${encodeURIComponent(q)}&type=1&offset=0&total=true&limit=3`;
+    const searchRes = await fetchViaProxy(searchUrl, PROXIES[0], 4000);
+    const songs = searchRes && searchRes.result && searchRes.result.songs;
+    if (!Array.isArray(songs) || !songs.length) return null;
+    const id = songs[0].id;
+    if (!id) return null;
+    const lyricUrl = `https://music.163.com/api/song/lyric?id=${id}&lv=1&kv=1&tv=-1`;
+    const lyricRes = await fetchViaProxy(lyricUrl, PROXIES[0], 4000);
+    const lrcText = lyricRes && lyricRes.lrc && lyricRes.lrc.lyric;
+    if (!lrcText) return null;
+    const cleanLines = lrcText.split('\n').filter(l => /\[\d+:\d+/.test(l) && !/作词|作曲|编曲|制作|混音|母带|出品/.test(l));
+    if (cleanLines.length < 3) return null;
+    return { syncedLyrics: lrcText, plainLyrics: null };
+  } catch { return null; }
+}
+
+async function tryLyricsOvh(title, artist){
+  if (!title) return null;
+  try {
+    const a = artist || 'unknown';
+    const url = `https://api.lyrics.ovh/v1/${encodeURIComponent(a)}/${encodeURIComponent(title)}`;
+    const res = await fetchWithTimeout(url, 3000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.lyrics) return { plainLyrics: data.lyrics.trim() };
+  } catch {}
+  return null;
+}
+
+async function tryLyrist(title, artist){
+  if (!title || !artist) return null;
+  const target = `https://lyrist.vercel.app/api/${encodeURIComponent(title)}/${encodeURIComponent(artist)}`;
+  try {
+    const res = await fetchWithTimeout(target, 3000);
+    if (res.ok){
+      const data = await res.json();
+      if (data && data.lyrics) return { plainLyrics: data.lyrics.trim() };
+    }
+  } catch {}
+  const data2 = await fetchViaProxy(target, PROXIES[0], 3500);
+  if (data2 && data2.lyrics) return { plainLyrics: data2.lyrics.trim() };
+  return null;
+}
+
+async function trySomeRandomApi(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const res = await fetchWithTimeout(`https://some-random-api.com/lyrics?title=${encodeURIComponent(q)}`, 3000);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.lyrics && data.lyrics.length > 50){
+      return { plainLyrics: data.lyrics.trim() };
+    }
+  } catch {}
+  return null;
+}
+
+async function tryChartLyrics(title, artist){
+  if (!title || !artist) return null;
+  const target = `http://api.chartlyrics.com/apiv1.asmx/SearchLyricDirect?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(title)}`;
+  try {
+    const res = await fetchWithTimeout(PROXIES[0](target), 3500);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const m = text.match(/<Lyric[^>]*>([\s\S]*?)<\/Lyric>/);
+    if (m && m[1] && m[1].trim().length > 50){
+      const plain = m[1]
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+        .trim();
+      if (plain && !/^sorry|not found|no lyrics/i.test(plain)) return { plainLyrics: plain };
+    }
+  } catch {}
+  return null;
+}
+
+// ========== ПАРАЛЛЕЛЬНЫЙ ПОИСК ==========
+async function searchLyricsParallel(title, artist, duration, token){
+  const sources = [
+    { name: 'LRCLIB',       fn: () => tryLrclibGet(title, artist, duration) },
+    { name: 'LRCLIB поиск', fn: () => tryLrclibSearch(title, artist) },
+    { name: 'NetEase',      fn: () => tryNetEase(title, artist) },
+    { name: 'lyrics.ovh',   fn: () => tryLyricsOvh(title, artist) },
+    { name: 'Lyrist',       fn: () => tryLyrist(title, artist) },
+    { name: 'SomeRandomAPI',fn: () => trySomeRandomApi(title, artist) },
+    { name: 'LRCLIB p1',    fn: () => tryLrclibProxyAllOrigins(title, artist, duration) },
+    { name: 'LRCLIB p2',    fn: () => tryLrclibProxyCodeTabs(title, artist, duration) },
+    { name: 'ChartLyrics',  fn: () => tryChartLyrics(title, artist) }
+  ];
+
+  console.log(`[lyrics] parallel search: ${sources.length} sources`);
+  const startTime = Date.now();
+
+  return new Promise((resolve) => {
+    let done = false;
+    let firstSynced = null;
+    let firstPlain = null;
+    let plainTimer = null;
+    let pending = sources.length;
+
+    const finish = (result) => {
+      if (done) return;
+      done = true;
+      clearTimeout(totalTimer);
+      if (plainTimer) clearTimeout(plainTimer);
+      const elapsed = Date.now() - startTime;
+      if (result){
+        console.log(`[lyrics] ✓ found in ${elapsed}ms via ${result.source} (${result.kind})`);
+      } else {
+        console.log(`[lyrics] ✗ not found in ${elapsed}ms`);
+      }
+      resolve(result);
+    };
+
+    // Жёсткий таймаут 4.5 секунды
+    const totalTimer = setTimeout(() => {
+      if (firstSynced) finish(firstSynced);
+      else if (firstPlain) finish(firstPlain);
+      else finish(null);
+    }, 4500);
+
+    sources.forEach((src, idx) => {
+      Promise.resolve()
+        .then(() => src.fn())
+        .then(result => {
+          pending--;
+          if (done) return;
+          if (token !== karaokeSearchToken) return finish(null);
+
+          if (result && result.syncedLyrics){
+            console.log(`[lyrics] synced from ${src.name}`);
+            if (!firstSynced){
+              firstSynced = { result, source: src.name, kind: 'synced' };
+              // Synced — мгновенная победа
+              finish(firstSynced);
+            }
+          } else if (result && result.plainLyrics){
+            console.log(`[lyrics] plain from ${src.name}`);
+            if (!firstPlain){
+              firstPlain = { result, source: src.name, kind: 'plain' };
+              // Даём 1.5 сек на synced
+              if (!plainTimer){
+                plainTimer = setTimeout(() => {
+                  if (done) return;
+                  if (firstSynced) finish(firstSynced);
+                  else if (firstPlain) finish(firstPlain);
+                  else if (pending === 0) finish(null);
+                }, 1500);
+              }
+            }
+          } else {
+            console.log(`[lyrics] miss: ${src.name}`);
+          }
+        })
+        .catch(e => {
+          pending--;
+          if (done) return;
+          console.log(`[lyrics] error ${src.name}: ${e && e.message}`);
+        });
+    });
+  });
+}
+
+// ========== LRC ==========
+function parseLRC(lrc){
+  if (!lrc) return [];
+  const lines = [];
+  const re = /\[(\d{1,2}):(\d{2})(?:[.:](\d{1,3}))?\]([^\n\r]*)/g;
+  let m;
+  while ((m = re.exec(lrc))){
+    const mm = parseInt(m[1], 10), ss = parseInt(m[2], 10);
+    let frac = 0;
+    if (m[3]){ const f = m[3]; frac = f.length === 2 ? parseInt(f, 10) * 10 : parseInt(f, 10); }
+    const time = mm * 60 + ss + frac / 1000;
+    const text = (m[4] || '').trim();
+    if (text) lines.push({ time, text });
+  }
+  lines.sort((a, b) => a.time - b.time);
+  return lines;
+}
+function distributeTimings(plain, duration){
+  const lines = plain.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!lines.length || !duration) return [];
+  const totalChars = lines.reduce((s, l) => s + Math.max(1, l.length), 0);
+  let acc = 0;
+  const out = [];
+  const startOffset = duration * 0.05;
+  const usable = duration - startOffset;
+  for (const l of lines){
+    const t = startOffset + (acc / totalChars) * usable;
+    out.push({ time: t, text: l });
+    acc += Math.max(1, l.length);
+  }
+  return out;
+}
+function linesToLRC(lines){
+  return lines.slice().sort((a, b) => a.time - b.time).map(l => {
+    const m = Math.floor(l.time / 60);
+    const s = (l.time % 60).toFixed(2).padStart(5, '0');
+    return `[${String(m).padStart(2, '0')}:${s}]${l.text || ''}`;
+  }).join('\n');
+}
+
+// ========== KARAOKE ==========
+function openOverlayWithLines(parsed){
+  renderKaraokeLines(parsed);
+  $('#karaoke-overlay').classList.add('show');
+  try { $('#karaoke-overlay').requestFullscreen().catch(() => {}); } catch {}
+  $('#karaoke-overlay').focus();
+  startKaraokeTick();
+}
+
+async function openKaraoke(source){
+  if (!source){ toast('Нет источника'); return; }
+
+  if (isSearchingKaraoke){
+    isSearchingKaraoke = false;
+    karaokeSearchToken++;
+    updateKaraokeButtons('idle');
+    toast('Поиск отменён');
+    return;
+  }
+
+  karaokeSource = source;
+  let title = '', artist = '', duration = 0, existingLines = null;
+
+  if (source === 'ext'){
+    if (!extNowPlaying){ toast('Ничего не играет'); return; }
+    title = extNowPlaying.title; artist = extNowPlaying.artist; duration = extNowPlaying.duration || 0;
+  } else if (source === 'player'){
+    if (!currentTrack){ toast('Плеер не открыт'); return; }
+    title = currentTrack.title; artist = currentTrack.artist;
+    duration = currentTrack.duration || (playerType === 'audio' && audioEl ? audioEl.duration : 0);
+    if (currentTrack.lyrics && currentTrack.lyrics.lines) existingLines = currentTrack.lyrics.lines;
+  }
+  if (!title){ toast('Нет названия'); return; }
+
+  karaokeOffsetKey = offsetKeyFor(artist, title);
+  karaokeOffset = loadOffset(karaokeOffsetKey);
+  setKaraokeOffset(karaokeOffset);
+
+  $('#karaoke-track-title').textContent = title;
+  $('#karaoke-track-artist').textContent = artist || '—';
+  applyKaraokeTheme();
+
+  karaokeLines = [];
+  karaokeActiveIndex = -1;
+  $('#karaoke-lines').innerHTML = '';
+
+  if (existingLines && existingLines.length){ openOverlayWithLines(existingLines); return; }
+
+  const cacheKey = [(artist || '').toLowerCase().trim(), (title || '').toLowerCase().trim()].join('|');
+  const cached = getLyricsCacheItem(cacheKey);
+  if (cached && (cached.syncedLyrics || cached.plainLyrics)){
+    let parsed = cached.syncedLyrics ? parseLRC(cached.syncedLyrics) : distributeTimings(cached.plainLyrics, duration);
+    karaokeApproximate = !cached.syncedLyrics;
+    openOverlayWithLines(parsed);
+    return;
+  }
+
+  // Параллельный поиск
+  isSearchingKaraoke = true;
+  karaokeSearchToken++;
+  const token = karaokeSearchToken;
+  updateKaraokeButtons('searching');
+
+  const found = await searchLyricsParallel(title, artist, duration, token);
+
+  if (token !== karaokeSearchToken) return;
+  isSearchingKaraoke = false;
+
+  if (found && found.result){
+    setLyricsCache(cacheKey, found.result);
+    let parsed = null;
+    if (found.result.syncedLyrics){ parsed = parseLRC(found.result.syncedLyrics); karaokeApproximate = false; }
+    else if (found.result.plainLyrics){ parsed = distributeTimings(found.result.plainLyrics, duration); karaokeApproximate = true; }
+
+    if (parsed && parsed.length){
+      updateKaraokeButtons('found');
+      await new Promise(r => setTimeout(r, 200));
+      updateKaraokeButtons('idle');
+      openOverlayWithLines(parsed);
+      if (found.kind === 'plain') toast('Синхронизация приблизительная — можно поправить');
+      return;
+    }
+  }
+
+  updateKaraokeButtons('notfound');
+  await new Promise(r => setTimeout(r, 700));
+  updateKaraokeButtons('idle');
+  showLyricsNotFound(title, artist);
+}
+
+function renderKaraokeLines(parsed){
+  karaokeLines = parsed;
+  karaokeActiveIndex = -1;
+  const linesEl = $('#karaoke-lines');
+  linesEl.innerHTML = '';
+  karaokeLines.forEach((line, i) => {
+    const el = document.createElement('div');
+    el.className = 'karaoke-line';
+    el.textContent = line.text;
+    el.dataset.index = i;
+    linesEl.appendChild(el);
+  });
+  applyKaraokeFontSize();
+}
+function startKaraokeTick(){
+  if (karaokeTickInterval) clearInterval(karaokeTickInterval);
+  karaokeTickInterval = setInterval(updateKaraokeTick, 100);
+}
+function getKaraokeRawTime(){
+  if (karaokeSource === 'player'){
+    if (playerType === 'youtube' && ytPlayer && ytPlayer.getCurrentTime){ try { return ytPlayer.getCurrentTime() || 0; } catch {} }
+    if (playerType === 'audio' && audioEl) return audioEl.currentTime || 0;
+    return 0;
+  }
+  if (karaokeSource === 'ext' && extNowPlaying){
+    const t = extNowPlaying;
+    let time = t.time || 0;
+    if (t.state === 'playing'){ const base = t.ts || extLastUpdate; if (base) time = Math.min(time + (Date.now() - base) / 1000, t.duration || Infinity); }
+    return time;
+  }
+  return 0;
+}
+function getKaraokeTime(){ return getKaraokeRawTime() + karaokeOffset; }
+function getKaraokeDuration(){
+  if (karaokeSource === 'player'){
+    if (playerType === 'youtube' && ytPlayer && ytPlayer.getDuration){ try { return ytPlayer.getDuration() || 0; } catch {} }
+    if (playerType === 'audio' && audioEl) return audioEl.duration || 0;
+    return 0;
+  }
+  if (karaokeSource === 'ext' && extNowPlaying) return extNowPlaying.duration || 0;
+  return 0;
+}
+function updateKaraokeTick(){
+  if (!karaokeLines.length) return;
+  const rawTime = getKaraokeRawTime();
+  const time = rawTime + karaokeOffset;
+  const duration = getKaraokeDuration();
+  if (duration > 0){
+    const pct = Math.min(100, (Math.max(0, rawTime) / duration) * 100);
+    const fill = $('#karaoke-progress-fill');
+    if (fill) fill.style.width = pct + '%';
+    const cur = $('#karaoke-time-current'), tot = $('#karaoke-time-total');
+    if (cur) cur.textContent = fmtTime(rawTime);
+    if (tot) tot.textContent = fmtTime(duration);
+  }
+  let idx = -1;
+  for (let i = 0; i < karaokeLines.length; i++){
+    if (karaokeLines[i].time <= time + 0.15) idx = i;
+    else break;
+  }
+  if (idx === karaokeActiveIndex) return;
+  karaokeActiveIndex = idx;
+  const all = $$('#karaoke-lines .karaoke-line');
+  all.forEach((el, i) => { el.classList.toggle('active', i === idx); el.classList.toggle('past', i < idx); });
+  if (settings.karaokeAutoscroll !== 'off' && idx >= 0){
+    const now = Date.now();
+    if (now - karaokeUserScrolledAt < 3000) return;
+    if (all[idx]) all[idx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+function closeKaraoke(){
+  $('#karaoke-overlay').classList.remove('show');
+  if (karaokeTickInterval){ clearInterval(karaokeTickInterval); karaokeTickInterval = null; }
+  if (document.fullscreenElement){ try { document.exitFullscreen(); } catch {} }
+  karaokeLines = [];
+  karaokeActiveIndex = -1;
+  karaokeSource = null;
+  karaokeSearchToken++;
+  isSearchingKaraoke = false;
+  updateKaraokeButtons('idle');
+}
+
+// ========== LYRICS NOT FOUND ==========
+function showLyricsNotFound(title, artist){
+  const modal = $('#lyrics-not-found-modal');
+  $('#lnf-title').textContent = 'Текст не найден';
+  const dur = (extNowPlaying && extNowPlaying.duration) || (currentTrack && currentTrack.duration) || 0;
+  let msg = `Для песни «${title}»${artist ? ' — ' + artist : ''} не удалось найти текст ни в одном источнике.`;
+  if (dur > 30) msg += ' Возможно, это инструментал или текст не опубликован.';
+  msg += ' Вставьте текст — сайт синхронизирует его сам.';
+  $('#lnf-text').textContent = msg;
+  modal.classList.add('show');
+  $('#lnf-paste').onclick = () => { modal.classList.remove('show'); openSyncWizard(title, artist, dur); };
+  $('#lnf-manual').onclick = () => { modal.classList.remove('show'); $('#lrc-file-input').click(); };
+  $('#lnf-construct').onclick = () => { modal.classList.remove('show'); openLRCConstructor(title, artist, []); };
+  $('#lnf-close').onclick = () => modal.classList.remove('show');
+}
+async function loadLRCFile(file){
+  try {
+    const text = await file.text();
+    const parsed = parseLRC(text);
+    if (!parsed.length){ toast('В файле нет синхронизированных строк'); return; }
+    applyCustomLRC(parsed);
+  } catch (e){ toast('Не удалось прочитать файл'); console.error(e); }
+}
+function applyCustomLRC(parsed){
+  const title = karaokeSource === 'player' ? (currentTrack && currentTrack.title) : (extNowPlaying && extNowPlaying.title);
+  const artist = karaokeSource === 'player' ? (currentTrack && currentTrack.artist) : (extNowPlaying && extNowPlaying.artist);
+  const cacheKey = [(artist || '').toLowerCase().trim(), (title || '').toLowerCase().trim()].join('|');
+  setLyricsCache(cacheKey, { syncedLyrics: linesToLRC(parsed), plainLyrics: null });
+  if (karaokeSource === 'player' && currentTrack){
+    currentTrack.lyrics = { lines: parsed };
+    saveLibrary();
+    toast('Текст загружен');
+    openKaraoke('player');
+  } else {
+    if (!$('#karaoke-overlay').classList.contains('show')){
+      toast('Текст сохранён. Откройте караоке снова.');
+      return;
+    }
+    karaokeSearchToken++;
+    renderKaraokeLines(parsed);
+    startKaraokeTick();
+    toast('Текст загружен');
+  }
+}
+
+// ========== SYNC WIZARD ==========
+let syncSource = null;
+let syncAnchorTime = null;
+let syncAnchorInterval = null;
+let syncResultLines = [];
+
+function openSyncWizard(title, artist, duration, existingLines){
+  syncSource = { title: title || 'Без названия', artist: artist || '', duration: duration || 0 };
+  syncAnchorTime = null;
+  syncResultLines = [];
+  $('#sync-track-info').textContent = `${syncSource.title}${syncSource.artist ? ' — ' + syncSource.artist : ''}`;
+  $('#sync-textarea').value = existingLines ? existingLines.map(l => l.text).join('\n') : '';
+  $('#sync-step-1').hidden = false;
+  $('#sync-step-2').hidden = true;
+  $('#sync-step-anchor').hidden = true;
+  $('#sync-step-progress').hidden = true;
+  $('#sync-step-result').hidden = true;
+  const canVad = !!(karaokeSource === 'player' && currentTrack && currentTrack.source === 'local' && currentTrack.audioData);
+  const vadBtn = $('#sync-mode-vad');
+  if (vadBtn) vadBtn.hidden = !canVad;
+  $('#sync-wizard-modal').classList.add('show');
+  setTimeout(() => $('#sync-textarea').focus(), 100);
+}
+function closeSyncWizard(){
+  $('#sync-wizard-modal').classList.remove('show');
+  if (syncAnchorInterval){ clearInterval(syncAnchorInterval); syncAnchorInterval = null; }
+  syncAnchorTime = null;
+}
+function syncParseText(text){ return text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0); }
+function syncHeuristic(lines, duration, anchorTime){
+  if (!lines.length) return [];
+  const start = anchorTime != null ? Math.max(0, anchorTime) : duration * 0.06;
+  const end = Math.max(start + 1, duration * 0.96);
+  const usable = end - start;
+  const totalChars = lines.reduce((s, l) => s + Math.max(1, l.length), 0);
+  let acc = 0;
+  const out = [];
+  for (const text of lines){
+    const time = start + (acc / totalChars) * usable;
+    out.push({ time: Math.round(time * 100) / 100, text });
+    acc += Math.max(1, text.length);
+  }
+  return out;
+}
+async function syncByVAD(lines, duration, audioDataUrl, onProgress){
+  if (!audioDataUrl) throw new Error('no_audio');
+  onProgress && onProgress(5, 'Загрузка аудиофайла…');
+  const arrayBuffer = await (await fetch(audioDataUrl)).arrayBuffer();
+  onProgress && onProgress(20, 'Декодирование…');
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const buffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+  const sr = buffer.sampleRate;
+  const data = buffer.getChannelData(0);
+  const totalDur = buffer.duration;
+  onProgress && onProgress(40, 'Анализ громкости…');
+  const winSize = Math.max(1, Math.floor(sr * 0.04));
+  const frames = [];
+  for (let i = 0; i + winSize < data.length; i += winSize){
+    let sum = 0;
+    for (let j = 0; j < winSize; j++) sum += data[i + j] * data[i + j];
+    frames.push({ time: i / sr, rms: Math.sqrt(sum / winSize) });
+  }
+  const smoothed = frames.map((f, i) => {
+    let s = 0, n = 0;
+    for (let j = -3; j <= 3; j++){ if (frames[i + j]){ s += frames[i + j].rms; n++; } }
+    return { time: f.time, rms: s / n };
+  });
+  onProgress && onProgress(60, 'Поиск фраз…');
+  const sortedRms = smoothed.map(f => f.rms).sort((a, b) => a - b);
+  const p20 = sortedRms[Math.floor(sortedRms.length * 0.2)] || 0;
+  const p80 = sortedRms[Math.floor(sortedRms.length * 0.8)] || p20 * 2;
+  const threshold = p20 + (p80 - p20) * 0.25;
+  const segments = [];
+  let inSeg = false, segStart = 0;
+  for (const f of smoothed){
+    const isSound = f.rms > threshold;
+    if (isSound && !inSeg){ inSeg = true; segStart = f.time; }
+    else if (!isSound && inSeg){ inSeg = false; if (f.time - segStart > 0.25) segments.push({ start: segStart, end: f.time }); }
+  }
+  if (inSeg) segments.push({ start: segStart, end: totalDur });
+  onProgress && onProgress(80, 'Сопоставление со строками…');
+  const N = lines.length;
+  const M = segments.length;
+  const out = [];
+  if (M === 0) return syncHeuristic(lines, duration, null);
+  if (M === N){
+    segments.forEach((seg, i) => out.push({ time: Math.round(seg.start * 100) / 100, text: lines[i] }));
+  } else if (M > N){
+    for (let i = 0; i < N; i++){
+      const segIdx = Math.round(i * (M - 1) / Math.max(1, N - 1));
+      out.push({ time: Math.round(segments[segIdx].start * 100) / 100, text: lines[i] });
+    }
+  } else {
+    const perSeg = N / M;
+    for (let i = 0; i < N; i++){
+      const segIdx = Math.min(M - 1, Math.floor(i / perSeg));
+      const seg = segments[segIdx];
+      const withinSeg = i - Math.floor(segIdx * perSeg);
+      const segDur = (segments[segIdx + 1]?.start || totalDur) - seg.start;
+      const subDur = segDur / Math.max(1, Math.ceil(perSeg));
+      out.push({ time: Math.round((seg.start + withinSeg * subDur) * 100) / 100, text: lines[i] });
+    }
+  }
+  for (let i = 1; i < out.length; i++){ if (out[i].time <= out[i-1].time) out[i].time = out[i-1].time + 0.3; }
+  onProgress && onProgress(100, 'Готово');
+  return out;
+}
+async function runSync(mode, anchorTime){
+  const text = $('#sync-textarea').value;
+  const lines = syncParseText(text);
+  if (lines.length < 1){ toast('Введите хотя бы одну строку'); return; }
+  const duration = syncSource.duration || 0;
+  if (mode !== 'vad' && duration <= 0){ toast('Неизвестна длительность трека'); return; }
+  $('#sync-step-1').hidden = true;
+  $('#sync-step-2').hidden = true;
+  $('#sync-step-anchor').hidden = true;
+  $('#sync-step-progress').hidden = false;
+  $('#sync-result-preview').innerHTML = '';
+  if (mode === 'vad'){
+    $('#sync-progress-title').textContent = 'Анализ звука…';
+    try {
+      const audioData = currentTrack && currentTrack.audioData;
+      const result = await syncByVAD(lines, duration, audioData, (pct, msg) => {
+        const fill = $('#sync-progress-fill'); const desc = $('#sync-progress-desc');
+        if (fill) fill.style.width = pct + '%';
+        if (desc) desc.textContent = msg;
+      });
+      syncResultLines = result;
+      showSyncResult(result, 'Точная синхронизация по звуку');
+    } catch (e){
+      console.error(e);
+      toast('Не удалось проанализировать звук — использую эвристику');
+      const result = syncHeuristic(lines, duration, anchorTime);
+      syncResultLines = result;
+      showSyncResult(result, 'Автоматическая синхронизация');
+    }
+    return;
+  }
+  $('#sync-progress-title').textContent = 'Синхронизация…';
+  $('#sync-progress-desc').textContent = anchorTime != null ? `Якорь: ${fmtTimeDec(anchorTime)}` : 'Автоматическое распределение';
+  const fill = $('#sync-progress-fill');
+  if (fill) fill.style.width = '0%';
+  await new Promise(r => setTimeout(r, 200));
+  if (fill) fill.style.width = '100%';
+  const result = syncHeuristic(lines, duration, anchorTime);
+  syncResultLines = result;
+  setTimeout(() => { showSyncResult(result, anchorTime != null ? 'Синхронизация с якорем' : 'Автоматическая синхронизация'); }, 300);
+}
+function showSyncResult(lines, modeLabel){
+  $('#sync-step-progress').hidden = true;
+  $('#sync-step-result').hidden = false;
+  $('#sync-result-desc').textContent = `${modeLabel}. Строк: ${lines.length}.`;
+  const preview = $('#sync-result-preview');
+  preview.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  lines.forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.innerHTML = `<span class="time">${fmtTimeDec(l.time).slice(0, -2)}</span><span class="text">${esc(l.text)}</span>`;
+    frag.appendChild(row);
+  });
+  preview.appendChild(frag);
+}
+function applySyncAndOpenKaraoke(){
+  if (!syncResultLines.length){ toast('Нет строк'); return; }
+  const sorted = syncResultLines.slice().sort((a, b) => a.time - b.time);
+  const cacheKey = [(syncSource.artist || '').toLowerCase().trim(), (syncSource.title || '').toLowerCase().trim()].join('|');
+  setLyricsCache(cacheKey, { syncedLyrics: linesToLRC(sorted), plainLyrics: null });
+  if (karaokeSource === 'player' && currentTrack){
+    currentTrack.lyrics = { lines: sorted };
+    saveLibrary();
+  }
+  closeSyncWizard();
+  if ($('#karaoke-overlay').classList.contains('show')){
+    karaokeSearchToken++;
+    renderKaraokeLines(sorted);
+    startKaraokeTick();
+    toast('Текст синхронизирован');
+  } else {
+    if (karaokeSource === 'player' && currentTrack) openKaraoke('player');
+    else if (extNowPlaying) openKaraoke('ext');
+    setTimeout(() => toast('Текст синхронизирован'), 500);
+  }
+}
+
+// ========== LRC CONSTRUCTOR ==========
+let lrcConstructorLines = [];
+let lrcConstructorSource = null;
+let lrcConstructorTickInterval = null;
+
+function openLRCConstructor(title, artist, initialLines){
+  lrcConstructorSource = {
+    title: title || 'Без названия', artist: artist || '',
+    duration: (extNowPlaying && extNowPlaying.duration) || (currentTrack && currentTrack.duration) || 0
+  };
+  $('#lrc-track-info').textContent = `${lrcConstructorSource.title}${lrcConstructorSource.artist ? ' — ' + lrcConstructorSource.artist : ''}`;
+  lrcConstructorLines = [];
+  if (initialLines && initialLines.length){
+    initialLines.forEach(l => lrcConstructorLines.push({ id: uid(), time: l.time, text: l.text }));
+  } else {
+    lrcConstructorLines.push({ id: uid(), time: 0, text: '' });
+  }
+  $('#lrc-paste-area').hidden = true;
+  $('#lrc-paste-textarea').value = '';
+  renderLRCConstructorLines();
+  $('#lrc-constructor-modal').classList.add('show');
+  updateLRCConstructorTime();
+  if (lrcConstructorTickInterval) clearInterval(lrcConstructorTickInterval);
+  lrcConstructorTickInterval = setInterval(updateLRCConstructorTime, 100);
+}
+function closeLRCConstructor(){
+  $('#lrc-constructor-modal').classList.remove('show');
+  if (lrcConstructorTickInterval){ clearInterval(lrcConstructorTickInterval); lrcConstructorTickInterval = null; }
+}
+function updateLRCConstructorTime(){
+  const t = getKaraokeRawTime();
+  const el = $('#lrc-time-current');
+  if (el) el.textContent = fmtTimeDec(t);
+  const btn = $('#lrc-play');
+  if (btn){
+    let isPlaying = false;
+    if (karaokeSource === 'player'){
+      if (playerType === 'youtube' && ytPlayer && ytPlayer.getPlayerState){ try { isPlaying = ytPlayer.getPlayerState() === 1; } catch {} }
+      if (playerType === 'audio' && audioEl) isPlaying = !audioEl.paused;
+    } else if (karaokeSource === 'ext' && extNowPlaying){
+      isPlaying = extNowPlaying.state === 'playing';
+    }
+    btn.textContent = isPlaying ? '⏸' : '▶';
+  }
+}
+function toggleConstructorPlay(){
+  if (karaokeSource === 'player') togglePlay();
+  else if (extConnected) sendControl('toggle');
+}
+function formatConstructorTime(sec){
+  if (sec == null || !isFinite(sec)) return '0:00.0';
+  const m = Math.floor(sec / 60);
+  const s = (sec % 60).toFixed(1);
+  return `${m}:${s.padStart(4, '0')}`;
+}
+function renderLRCConstructorLines(){
+  const list = $('#lrc-lines-list');
+  const empty = $('#lrc-lines-empty');
+  list.innerHTML = '';
+  if (!lrcConstructorLines.length){ empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  lrcConstructorLines.forEach((line, i) => {
+    const row = document.createElement('div');
+    row.className = 'lrc-line-row';
+    row.innerHTML = `
+      <div class="lrc-line-num">${i + 1}</div>
+      <input type="text" class="lrc-line-time" data-action="time">
+      <input type="text" class="lrc-line-text" value="${esc(line.text)}" placeholder="Текст строки" data-action="text">
+      <button class="lrc-line-mark" data-action="mark" title="Отметить текущим временем">🕐</button>
+      <button class="lrc-line-del" data-action="del" title="Удалить">✕</button>
+    `;
+    const timeInput = row.querySelector('.lrc-line-time');
+    timeInput.value = formatConstructorTime(line.time);
+    timeInput.addEventListener('change', () => { line.time = parseTimeInput(timeInput.value); timeInput.value = formatConstructorTime(line.time); });
+    timeInput.addEventListener('keydown', (e) => { if (e.key === 'Enter'){ e.preventDefault(); line.time = parseTimeInput(timeInput.value); timeInput.value = formatConstructorTime(line.time); timeInput.blur(); } });
+    const textInput = row.querySelector('.lrc-line-text');
+    textInput.addEventListener('input', () => { line.text = textInput.value; });
+    textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey){
+        e.preventDefault();
+        line.time = Math.round(getKaraokeRawTime() * 10) / 10;
+        timeInput.value = formatConstructorTime(line.time);
+        if (i + 1 < lrcConstructorLines.length){
+          const nextRow = list.querySelectorAll('.lrc-line-row')[i + 1];
+          if (nextRow) nextRow.querySelector('.lrc-line-text').focus();
+        }
+      }
+    });
+    row.querySelector('[data-action="mark"]').addEventListener('click', () => {
+      line.time = Math.round(getKaraokeRawTime() * 10) / 10;
+      timeInput.value = formatConstructorTime(line.time);
+      textInput.focus();
+    });
+    row.querySelector('[data-action="del"]').addEventListener('click', () => {
+      lrcConstructorLines = lrcConstructorLines.filter(x => x.id !== line.id);
+      renderLRCConstructorLines();
+    });
+    list.appendChild(row);
+  });
+}
+function addLRCConstructorLine(){
+  const line = { id: uid(), time: Math.round(getKaraokeRawTime() * 10) / 10, text: '' };
+  lrcConstructorLines.push(line);
+  renderLRCConstructorLines();
+  const list = $('#lrc-lines-list');
+  const last = list.lastElementChild;
+  if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (last) last.querySelector('.lrc-line-text').focus();
+}
+function exportLRCConstructor(){
+  const lines = lrcConstructorLines.filter(l => (l.text || '').trim());
+  if (!lines.length){ toast('Нет строк для экспорта'); return; }
+  const lrc = linesToLRC(lines);
+  const title = lrcConstructorSource.title || 'lyrics';
+  const fileName = title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 60) + '.lrc';
+  const blob = new Blob([lrc], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = fileName; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  toast('Скачано: ' + fileName);
+}
+function applyLRCConstructor(){
+  const lines = lrcConstructorLines.filter(l => (l.text || '').trim()).map(l => ({ time: l.time, text: l.text }));
+  if (!lines.length){ toast('Нет строк с текстом'); return; }
+  lines.sort((a, b) => a.time - b.time);
+  closeLRCConstructor();
+  applyCustomLRC(lines);
+}
+function pasteTextToLines(text){
+  const raw = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  if (!raw.length){ toast('Пустой текст'); return; }
+  const duration = lrcConstructorSource.duration || 0;
+  const startOffset = duration > 0 ? duration * 0.05 : 0;
+  const usable = duration > 0 ? duration - startOffset : 0;
+  const totalChars = raw.reduce((s, l) => s + Math.max(1, l.length), 0);
+  let acc = 0;
+  const newLines = raw.map(text => {
+    const t = duration > 0 ? startOffset + (acc / totalChars) * usable : 0;
+    acc += Math.max(1, text.length);
+    return { id: uid(), time: Math.round(t * 10) / 10, text };
+  });
+  const hasContent = lrcConstructorLines.some(l => l.text.trim());
+  if (!hasContent){ lrcConstructorLines = newLines; }
+  else { if (!confirm('Добавить текст к существующим строкам?')) return; lrcConstructorLines = lrcConstructorLines.concat(newLines); }
+  renderLRCConstructorLines();
+  toast(`Добавлено строк: ${newLines.length}`);
+}
+
+// ========== SHEETS ==========
+function openSheet(sel){ closeSheets(); const el = $(sel); if (!el) return; el.classList.add('open'); $('#overlay').classList.add('show'); }
+function closeSheets(){ $$('.sheet').forEach(s => s.classList.remove('open')); $('#overlay').classList.remove('show'); }
+$('#overlay').addEventListener('click', closeSheets);
+
+// ========== SORT MENU ==========
+function closeSortMenu(){ if (sortMenuEl){ sortMenuEl.remove(); sortMenuEl = null; } document.removeEventListener('click', outsideSort, true); }
+function outsideSort(e){ if (!sortMenuEl) return; if (!sortMenuEl.contains(e.target) && !e.target.closest('#sort-btn')) closeSortMenu(); }
+$('#sort-btn').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (sortMenuEl){ closeSortMenu(); return; }
+  const btn = $('#sort-btn'); const rect = btn.getBoundingClientRect();
+  const menu = document.createElement('div'); menu.className = 'sort-menu';
+  [ { key: 'addedAt', label: 'По дате' }, { key: 'title', label: 'По названию' }, { key: 'artist', label: 'По исполнителю' } ].forEach(opt => {
+    const b = document.createElement('button');
+    b.innerHTML = `<span>${opt.label}</span><span class="check">✓</span>`;
+    if (settings.sortBy === opt.key) b.classList.add('active');
+    b.addEventListener('click', () => {
+      if (settings.sortBy === opt.key) settings.sortDir = settings.sortDir === 'asc' ? 'desc' : 'asc';
+      else { settings.sortBy = opt.key; settings.sortDir = (opt.key === 'title' || opt.key === 'artist') ? 'asc' : 'desc'; }
+      saveSettings(); renderLibrary(); closeSortMenu();
+    });
+    menu.appendChild(b);
+  });
+  document.body.appendChild(menu); sortMenuEl = menu;
+  const mw = 200, mh = menu.offsetHeight;
+  let left = rect.right - mw; if (left < 12) left = 12;
+  let top = rect.bottom + 6; if (top + mh > window.innerHeight - 12) top = rect.top - mh - 6;
+  menu.style.left = left + 'px'; menu.style.top = top + 'px';
+  setTimeout(() => document.addEventListener('click', outsideSort, true), 0);
+});
+
+// ========== SEARCH ==========
+$('#btn-search').addEventListener('click', () => { $('#search-bar').classList.add('open'); setTimeout(() => $('#search-input').focus(), 80); });
+$('#btn-search-cancel').addEventListener('click', () => { $('#search-bar').classList.remove('open'); $('#search-input').value = ''; renderLibrary(); });
+$('#search-input').addEventListener('input', () => renderTracks());
+$('#search-input').addEventListener('keydown', (e) => { if (e.key === 'Escape') $('#btn-search-cancel').click(); });
+
+// ========== ACTIONS ==========
+$('#btn-theme').addEventListener('click', cycleTheme);
+$('#btn-settings').addEventListener('click', () => {
+  $$('#set-theme button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.theme));
+  $$('#set-ktheme button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.karaokeTheme));
+  $$('#set-kfs button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.karaokeFontSize));
+  $$('#set-scroll button').forEach(b => b.classList.toggle('active', b.dataset.v === settings.karaokeAutoscroll));
+  openSheet('#settings-sheet');
+});
+$('#btn-add').addEventListener('click', openAddSheet);
+$('#empty-add').addEventListener('click', openAddSheet);
+$('#ext-howto').addEventListener('click', () => $('#ext-modal').classList.add('show'));
+$('#ext-modal-close').addEventListener('click', () => $('#ext-modal').classList.remove('show'));
+$$('#add-sheet [data-add]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.add === 'yt'){ $('#yt-input-field').hidden = false; $('#yt-submit').hidden = false; setTimeout(() => $('#yt-url-input').focus(), 100); }
+    else if (btn.dataset.add === 'file'){ closeSheets(); $('#audio-file-input').click(); }
+  });
+});
+$('#yt-submit').addEventListener('click', async () => { const url = $('#yt-url-input').value.trim(); if (!url){ toast('Введите ссылку'); return; } await addYouTube(url); });
+$('#yt-url-input').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#yt-submit').click(); });
+$('#audio-file-input').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) await addLocalFile(f); });
+$('#lrc-file-input').addEventListener('change', async (e) => { const f = e.target.files[0]; e.target.value = ''; if (f) await loadLRCFile(f); });
+$$('#set-theme button').forEach(b => { b.addEventListener('click', () => { settings.theme = b.dataset.v; applyTheme(); $$('#set-theme button').forEach(x => x.classList.toggle('active', x === b)); }); });
+$$('#set-ktheme button').forEach(b => { b.addEventListener('click', () => { settings.karaokeTheme = b.dataset.v; saveSettings(); applyKaraokeTheme(); $$('#set-ktheme button').forEach(x => x.classList.toggle('active', x === b)); }); });
+$$('#set-kfs button').forEach(b => { b.addEventListener('click', () => { settings.karaokeFontSize = b.dataset.v; applyKaraokeFontSize(); saveSettings(); $$('#set-kfs button').forEach(x => x.classList.toggle('active', x === b)); }); });
+$$('#set-scroll button').forEach(b => { b.addEventListener('click', () => { settings.karaokeAutoscroll = b.dataset.v; saveSettings(); $$('#set-scroll button').forEach(x => x.classList.toggle('active', x === b)); }); });
+$('#set-extension').addEventListener('click', () => { closeSheets(); setTimeout(() => $('#ext-modal').classList.add('show'), 200); });
+$('#set-diag').addEventListener('click', async () => {
+  closeSheets();
+  const modal = $('#diag-modal');
+  $('#diag-summary').textContent = 'Запрос…'; $('#diag-output').textContent = 'Ожидание…';
+  modal.classList.add('show');
+  if (!extConnected){ $('#diag-summary').textContent = 'Расширение не подключено'; $('#diag-output').textContent = 'Установите расширение.'; return; }
+  const res = await new Promise((resolve) => {
+    _diagResolve = resolve;
+    try { window.postMessage({ source: 'kizamia-site', type: 'diag' }, '*'); } catch {}
+    setTimeout(() => { if (_diagResolve){ _diagResolve(null); _diagResolve = null; } }, 5000);
+  });
+  if (res && res.data){
+    const d = res.data;
+    let s = `Сайт: ${d.url || '—'}\nВерсия inject: ${d.version || '—'}\nHandlers: ${(d.mediaSessionHandlers || []).join(', ') || 'НЕТ'}\n`;
+    $('#diag-summary').textContent = s;
+    $('#diag-output').textContent = JSON.stringify(d, null, 2);
+  } else { $('#diag-summary').textContent = 'Ответ не получен'; $('#diag-output').textContent = 'Вкладка не отвечает.'; }
+});
+$('#diag-close').addEventListener('click', () => $('#diag-modal').classList.remove('show'));
+$('#diag-copy').addEventListener('click', async () => { try { await navigator.clipboard.writeText($('#diag-output').textContent || ''); toast('Скопировано'); } catch { toast('Не удалось'); } });
+$('#set-clear').addEventListener('click', () => {
+  if (!library.length){ toast('Пусто'); return; }
+  if (confirm('Удалить все треки?')){ library = []; saveLibrary(); renderLibrary(); closeSheets(); toast('Очищено'); }
+});
+
+function applyKaraokeFontSize(){
+  const map = { small: 0.85, normal: 1, big: 1.25 };
+  const scale = map[settings.karaokeFontSize] || 1;
+  document.documentElement.style.setProperty('--kfs', scale);
+  $$('#karaoke-lines .karaoke-line').forEach(el => { const base = el.classList.contains('active') ? 38 : 26; el.style.fontSize = (base * scale) + 'px'; });
+}
+
+// ========== PLAYER EVENTS ==========
+$('#btn-player-back').addEventListener('click', closePlayer);
+$('#p-play').addEventListener('click', togglePlay);
+$('#p-rewind').addEventListener('click', () => seekBy(-5));
+$('#p-forward').addEventListener('click', () => seekBy(5));
+$('#player-progress-bar').addEventListener('click', (e) => {
+  const rect = e.currentTarget.getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const dur = playerType === 'youtube' && ytPlayer ? ytPlayer.getDuration() : playerType === 'audio' && audioEl ? audioEl.duration : 0;
+  if (!dur) return;
+  const target = pct * dur;
+  if (playerType === 'youtube' && ytPlayer) ytPlayer.seekTo(target, true);
+  else if (playerType === 'audio' && audioEl) audioEl.currentTime = target;
+});
+$('#p-karaoke').addEventListener('click', () => openKaraoke('player'));
+$('#btn-player-more').addEventListener('click', () => { if (!currentTrack) return; if (confirm(`Удалить трек «${currentTrack.title}»?`)) deleteTrack(currentTrack.id); });
+
+// ========== NPC ==========
+function sendControl(action){
+  if (!extConnected){ toast('Расширение не установлено'); return; }
+  window.postMessage({ source: 'kizamia-site', type: 'control', action }, '*');
+}
+$('#np-prev').addEventListener('click', () => sendControl('prev'));
+$('#np-play').addEventListener('click', () => sendControl('toggle'));
+$('#np-next').addEventListener('click', () => sendControl('next'));
+$('#np-karaoke').addEventListener('click', () => openKaraoke('ext'));
+$('#np-save').addEventListener('click', () => {
+  if (!extNowPlaying) return;
+  const t = { id: uid(), source: 'ext', sourceUrl: extNowPlaying.url || '', sourceHost: extNowPlaying.host || '', title: extNowPlaying.title || 'Без названия', artist: extNowPlaying.artist || 'Неизвестный исполнитель', duration: extNowPlaying.duration || 0, addedAt: Date.now(), lyrics: null };
+  library.push(t); saveLibrary(); renderLibrary();
+  toast('Сохранено из ' + (t.sourceHost || 'источника'));
+});
+
+// ========== KARAOKE EVENTS ==========
+$('#karaoke-back').addEventListener('click', closeKaraoke);
+$('#karaoke-fullscreen').addEventListener('click', () => {
+  if (!document.fullscreenElement) $('#karaoke-overlay').requestFullscreen().catch(() => {});
+  else document.exitFullscreen().catch(() => {});
+});
+$('#karaoke-scroll').addEventListener('scroll', () => { karaokeUserScrolledAt = Date.now(); }, { passive: true });
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement && $('#karaoke-overlay').classList.contains('show')) closeKaraoke();
+});
+$('#ksync-minus1').addEventListener('click', () => setKaraokeOffset(karaokeOffset - 1.0));
+$('#ksync-minus05').addEventListener('click', () => setKaraokeOffset(karaokeOffset - 0.5));
+$('#ksync-plus05').addEventListener('click', () => setKaraokeOffset(karaokeOffset + 0.5));
+$('#ksync-plus1').addEventListener('click', () => setKaraokeOffset(karaokeOffset + 1.0));
+$('#ksync-edit').addEventListener('click', () => {
+  const title = karaokeSource === 'player' ? (currentTrack && currentTrack.title) : (extNowPlaying && extNowPlaying.title);
+  const artist = karaokeSource === 'player' ? (currentTrack && currentTrack.artist) : (extNowPlaying && extNowPlaying.artist);
+  openLRCConstructor(title || '', artist || '', karaokeLines.slice());
+});
+$('#ksync-paste').addEventListener('click', () => {
+  const title = karaokeSource === 'player' ? (currentTrack && currentTrack.title) : (extNowPlaying && extNowPlaying.title);
+  const artist = karaokeSource === 'player' ? (currentTrack && currentTrack.artist) : (extNowPlaying && extNowPlaying.artist);
+  const dur = getKaraokeDuration();
+  openSyncWizard(title || '', artist || '', dur, karaokeLines.length ? karaokeLines : null);
+});
+
+// ========== SYNC WIZARD EVENTS ==========
+$('#sync-close').addEventListener('click', closeSyncWizard);
+$('#sync-wizard-modal').addEventListener('click', (e) => { if (e.target === $('#sync-wizard-modal')) closeSyncWizard(); });
+$('#sync-next').addEventListener('click', () => {
+  const text = $('#sync-textarea').value;
+  const lines = syncParseText(text);
+  if (lines.length < 1){ toast('Введите хотя бы одну строку'); return; }
+  $('#sync-step-1').hidden = true;
+  $('#sync-step-2').hidden = false;
+});
+$('#sync-back-1').addEventListener('click', () => { $('#sync-step-2').hidden = true; $('#sync-step-1').hidden = false; });
+$$('.sync-mode').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const mode = btn.dataset.mode;
+    if (mode === 'auto'){ runSync('auto', null); }
+    else if (mode === 'anchor'){
+      $('#sync-step-2').hidden = true;
+      $('#sync-step-anchor').hidden = false;
+      syncAnchorTime = null;
+      updateAnchorTimeLabel();
+      if (syncAnchorInterval) clearInterval(syncAnchorInterval);
+      syncAnchorInterval = setInterval(updateAnchorTimeLabel, 100);
+    } else if (mode === 'vad'){ runSync('vad', null); }
+  });
+});
+function updateAnchorTimeLabel(){
+  const el = $('#sync-anchor-time');
+  if (!el) return;
+  const raw = getKaraokeRawTime();
+  el.textContent = fmtTimeDec(raw);
+  syncAnchorTime = raw;
+}
+$('#sync-anchor-cancel').addEventListener('click', () => {
+  if (syncAnchorInterval){ clearInterval(syncAnchorInterval); syncAnchorInterval = null; }
+  $('#sync-step-anchor').hidden = true;
+  $('#sync-step-2').hidden = false;
+});
+$('#sync-anchor-confirm').addEventListener('click', () => {
+  if (syncAnchorInterval){ clearInterval(syncAnchorInterval); syncAnchorInterval = null; }
+  const anchor = syncAnchorTime != null ? syncAnchorTime : getKaraokeRawTime();
+  runSync('anchor', anchor);
+});
+$('#sync-result-apply').addEventListener('click', applySyncAndOpenKaraoke);
+$('#sync-result-edit').addEventListener('click', () => {
+  const lines = syncResultLines.slice().sort((a, b) => a.time - b.time);
+  closeSyncWizard();
+  openLRCConstructor(syncSource.title, syncSource.artist, lines);
+});
+
+// ========== LRC CONSTRUCTOR EVENTS ==========
+$('#lrc-close').addEventListener('click', closeLRCConstructor);
+$('#lrc-play').addEventListener('click', toggleConstructorPlay);
+$('#lrc-add-line').addEventListener('click', addLRCConstructorLine);
+$('#lrc-export').addEventListener('click', exportLRCConstructor);
+$('#lrc-apply').addEventListener('click', applyLRCConstructor);
+$('#lrc-paste-toggle').addEventListener('click', () => {
+  const area = $('#lrc-paste-area');
+  area.hidden = !area.hidden;
+  if (!area.hidden){ setTimeout(() => $('#lrc-paste-textarea').focus(), 50); }
+});
+$('#lrc-paste-cancel').addEventListener('click', () => { $('#lrc-paste-area').hidden = true; $('#lrc-paste-textarea').value = ''; });
+$('#lrc-paste-apply').addEventListener('click', () => {
+  const txt = $('#lrc-paste-textarea').value;
+  if (!txt.trim()){ toast('Вставьте текст'); return; }
+  pasteTextToLines(txt);
+  $('#lrc-paste-area').hidden = true;
+  $('#lrc-paste-textarea').value = '';
+});
+$('#lrc-constructor-modal').addEventListener('click', (e) => { if (e.target === $('#lrc-constructor-modal')) closeLRCConstructor(); });
+
+// ========== GLOBAL KEYBOARD ==========
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape'){
+    if (sortMenuEl){ closeSortMenu(); return; }
+    if ($('#sync-wizard-modal').classList.contains('show')){ closeSyncWizard(); return; }
+    if ($('#lrc-constructor-modal').classList.contains('show')){ closeLRCConstructor(); return; }
+    if ($('#diag-modal').classList.contains('show')){ $('#diag-modal').classList.remove('show'); return; }
+    if ($('#lyrics-not-found-modal').classList.contains('show')){ $('#lyrics-not-found-modal').classList.remove('show'); return; }
+    if ($('#ext-modal').classList.contains('show')){ $('#ext-modal').classList.remove('show'); return; }
+    if ($('.sheet.open')){ closeSheets(); return; }
+    if ($('#karaoke-overlay').classList.contains('show')){ closeKaraoke(); return; }
+    if ($('#view-player').classList.contains('active')){ closePlayer(); return; }
+  }
+  if ($('#karaoke-overlay').classList.contains('show') && !$('#lrc-constructor-modal').classList.contains('show') && !$('#sync-wizard-modal').classList.contains('show')){
+    if (e.key === '['){ e.preventDefault(); setKaraokeOffset(karaokeOffset - 0.5); return; }
+    if (e.key === ']'){ e.preventDefault(); setKaraokeOffset(karaokeOffset + 0.5); return; }
+    if (e.key === '\\'){ e.preventDefault(); setKaraokeOffset(0); return; }
+  }
+  if (e.key === ' ' && $('#view-player').classList.contains('active')){
+    if (!e.target.matches('input, textarea')){ e.preventDefault(); togglePlay(); }
+  }
+});
+
+window.addEventListener('storage', (e) => {
+  if (e.key === KEYS.library){ library = LS.get(KEYS.library, []); renderLibrary(); }
+  if (e.key === KEYS.settings){ settings = Object.assign(settings, LS.get(KEYS.settings, {})); applyTheme(); renderLibrary(); }
+});
+
+function init(){
+  applyTheme(); applyKaraokeFontSize(); renderLibrary();
+  startExtensionDetection();
+  setTimeout(pingExtension, 100);
+}
+init();
+</script>
+</body>
+</html>
