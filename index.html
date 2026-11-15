@@ -1765,7 +1765,51 @@ function fetchWithTimeout(url, ms, opts){
   return fetch(url, Object.assign({ cache: 'no-store', signal: ctrl.signal }, opts || {})).finally(() => clearTimeout(timer));
 }
 
+// ========== ПРОКСИ ==========
+const PROXIES = [
+  (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u),
+  (u) => 'https://thingproxy.freeboard.io/fetch/' + u,
+  (u) => 'https://corsproxy.io/?url=' + encodeURIComponent(u)
+];
+
+async function fetchViaAnyProxy(target, timeoutMs){
+  // 1. Прямой запрос
+  try {
+    const res = await fetchWithTimeout(target, Math.min(timeoutMs || 3500, 3500));
+    if (res.ok){
+      const text = await res.text();
+      if (text && text.length > 0) return text;
+    }
+  } catch {}
+  // 2. Через прокси по очереди
+  for (const proxyFn of PROXIES){
+    try {
+      const res = await fetchWithTimeout(proxyFn(target), timeoutMs || 4000);
+      if (!res.ok) continue;
+      const text = await res.text();
+      if (text && text.length > 0) return text;
+    } catch {}
+  }
+  return null;
+}
+
+function extractJsonFromText(text){
+  if (!text) return null;
+  try { return JSON.parse(text); } catch {}
+  const i1 = text.indexOf('{');
+  const i2 = text.indexOf('[');
+  let start = -1;
+  if (i1 >= 0 && (i2 < 0 || i1 < i2)) start = i1;
+  else if (i2 >= 0) start = i2;
+  if (start < 0) return null;
+  try { return JSON.parse(text.slice(start)); } catch {}
+  return null;
+}
+
 // ========== ИСТОЧНИКИ ==========
+
+// --- LRCLIB ---
 async function tryLrclibGet(title, artist, duration){
   if (!title || !artist) return null;
   try {
@@ -1779,6 +1823,7 @@ async function tryLrclibGet(title, artist, duration){
   } catch {}
   return null;
 }
+
 async function tryLrclibSearch(title, artist){
   try {
     const q = [title, artist].filter(Boolean).join(' ');
@@ -1791,57 +1836,35 @@ async function tryLrclibSearch(title, artist){
   return null;
 }
 
-const PROXIES = [
-  (u) => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
-  (u) => 'https://api.codetabs.com/v1/proxy?quest=' + encodeURIComponent(u)
-];
-
-async function fetchViaProxy(target, proxyFn, timeout){
-  try {
-    const res = await fetchWithTimeout(proxyFn(target), timeout || 4000);
-    if (!res.ok) return null;
-    const text = await res.text();
-    const idx = text.indexOf('{');
-    const idx2 = text.indexOf('[');
-    let start = -1;
-    if (idx >= 0 && (idx2 < 0 || idx < idx2)) start = idx;
-    else if (idx2 >= 0) start = idx2;
-    const json = start >= 0 ? text.slice(start) : text;
-    return JSON.parse(json);
-  } catch { return null; }
-}
-
-async function tryLrclibProxyAllOrigins(title, artist, duration){
+async function tryLrclibProxy(title, artist, duration){
   if (!title || !artist) return null;
   const p = new URLSearchParams();
   p.set('track_name', title); p.set('artist_name', artist);
   if (duration) p.set('duration', Math.round(duration));
-  const data = await fetchViaProxy('https://lrclib.net/api/get?' + p.toString(), PROXIES[0], 4000);
+  const text = await fetchViaAnyProxy('https://lrclib.net/api/get?' + p.toString(), 4000);
+  const data = extractJsonFromText(text);
   if (data && (data.syncedLyrics || data.plainLyrics)) return data;
-  return null;
-}
-async function tryLrclibProxyCodeTabs(title, artist, duration){
-  if (!title || !artist) return null;
-  const p = new URLSearchParams();
-  p.set('track_name', title); p.set('artist_name', artist);
-  if (duration) p.set('duration', Math.round(duration));
-  const data = await fetchViaProxy('https://lrclib.net/api/get?' + p.toString(), PROXIES[1], 4000);
-  if (data && (data.syncedLyrics || data.plainLyrics)) return data;
+  const sText = await fetchViaAnyProxy('https://lrclib.net/api/search?q=' + encodeURIComponent([title, artist].join(' ')), 4000);
+  const sArr = extractJsonFromText(sText);
+  if (Array.isArray(sArr) && sArr.length && (sArr[0].syncedLyrics || sArr[0].plainLyrics)) return sArr[0];
   return null;
 }
 
+// --- NetEase ---
 async function tryNetEase(title, artist){
   if (!title) return null;
   try {
     const q = [artist, title].filter(Boolean).join(' ').trim();
     const searchUrl = `https://music.163.com/api/search/get/web?csrf_token=&s=${encodeURIComponent(q)}&type=1&offset=0&total=true&limit=3`;
-    const searchRes = await fetchViaProxy(searchUrl, PROXIES[0], 4000);
+    const searchText = await fetchViaAnyProxy(searchUrl, 4000);
+    const searchRes = extractJsonFromText(searchText);
     const songs = searchRes && searchRes.result && searchRes.result.songs;
     if (!Array.isArray(songs) || !songs.length) return null;
     const id = songs[0].id;
     if (!id) return null;
     const lyricUrl = `https://music.163.com/api/song/lyric?id=${id}&lv=1&kv=1&tv=-1`;
-    const lyricRes = await fetchViaProxy(lyricUrl, PROXIES[0], 4000);
+    const lyricText = await fetchViaAnyProxy(lyricUrl, 4000);
+    const lyricRes = extractJsonFromText(lyricText);
     const lrcText = lyricRes && lyricRes.lrc && lyricRes.lrc.lyric;
     if (!lrcText) return null;
     const cleanLines = lrcText.split('\n').filter(l => /\[\d+:\d+/.test(l) && !/作词|作曲|编曲|制作|混音|母带|出品/.test(l));
@@ -1850,6 +1873,66 @@ async function tryNetEase(title, artist){
   } catch { return null; }
 }
 
+// --- QQ Music ---
+async function tryQQMusic(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://c.y.qq.com/soso/fcgi-bin/client_search_cp?p=1&n=3&w=${encodeURIComponent(q)}&format=json`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 4500);
+    const searchRes = extractJsonFromText(searchText);
+    const list = searchRes && searchRes.data && searchRes.data.song && searchRes.data.song.list;
+    if (!Array.isArray(list) || !list.length) return null;
+    const songmid = list[0].songmid;
+    if (!songmid) return null;
+    const lyricUrl = `https://c.y.qq.com/lyric/fcgi-bin/fcg_query_lyric_new.fcg?songmid=${songmid}&format=json&nobase64=0`;
+    const lyricText = await fetchViaAnyProxy(lyricUrl, 4500);
+    const lyricRes = extractJsonFromText(lyricText);
+    const lrcText = lyricRes && lyricRes.lyric;
+    if (!lrcText) return null;
+    const decoded = lrcText
+      .replace(/&#(\d+);/g, (_, c) => String.fromCharCode(+c))
+      .replace(/&quot;/g, '"').replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+    const cleanLines = decoded.split('\n').filter(l => /\[\d+:\d+/.test(l));
+    if (cleanLines.length < 3) return null;
+    return { syncedLyrics: decoded, plainLyrics: null };
+  } catch { return null; }
+}
+
+// --- Kugou ---
+async function tryKugou(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://mobilecdn.kugou.com/api/v3/search/song?keyword=${encodeURIComponent(q)}&page=1&pagesize=3`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 4500);
+    const searchRes = extractJsonFromText(searchText);
+    const info = searchRes && searchRes.data && searchRes.data.info;
+    if (!Array.isArray(info) || !info.length) return null;
+    const hash = info[0].hash;
+    if (!hash) return null;
+    const krcUrl = `https://krcs.kugou.com/search?ver=1&man=yes&client=mobi&keyword=&duration=&hash=${hash}`;
+    const krcText = await fetchViaAnyProxy(krcUrl, 4500);
+    const krcRes = extractJsonFromText(krcText);
+    const candidates = krcRes && krcRes.candidates;
+    if (!Array.isArray(candidates) || !candidates.length) return null;
+    const { id, accesskey } = candidates[0];
+    if (!id || !accesskey) return null;
+    const dlUrl = `https://lyrics.kugou.com/download?ver=1&client=pc&id=${id}&accesskey=${accesskey}&fmt=lrc&charset=utf8`;
+    const dlText = await fetchViaAnyProxy(dlUrl, 4500);
+    const dlRes = extractJsonFromText(dlText);
+    const content = dlRes && dlRes.content;
+    if (!content) return null;
+    let lrcText = '';
+    try { lrcText = atob(content); } catch { return null; }
+    const cleanLines = lrcText.split('\n').filter(l => /\[\d+:\d+/.test(l));
+    if (cleanLines.length < 3) return null;
+    return { syncedLyrics: lrcText, plainLyrics: null };
+  } catch { return null; }
+}
+
+// --- lyrics.ovh ---
 async function tryLyricsOvh(title, artist){
   if (!title) return null;
   try {
@@ -1863,6 +1946,7 @@ async function tryLyricsOvh(title, artist){
   return null;
 }
 
+// --- Lyrist ---
 async function tryLyrist(title, artist){
   if (!title || !artist) return null;
   const target = `https://lyrist.vercel.app/api/${encodeURIComponent(title)}/${encodeURIComponent(artist)}`;
@@ -1873,11 +1957,13 @@ async function tryLyrist(title, artist){
       if (data && data.lyrics) return { plainLyrics: data.lyrics.trim() };
     }
   } catch {}
-  const data2 = await fetchViaProxy(target, PROXIES[0], 3500);
-  if (data2 && data2.lyrics) return { plainLyrics: data2.lyrics.trim() };
+  const text = await fetchViaAnyProxy(target, 4000);
+  const data = extractJsonFromText(text);
+  if (data && data.lyrics) return { plainLyrics: data.lyrics.trim() };
   return null;
 }
 
+// --- SomeRandomAPI ---
 async function trySomeRandomApi(title, artist){
   if (!title) return null;
   try {
@@ -1885,49 +1971,186 @@ async function trySomeRandomApi(title, artist){
     const res = await fetchWithTimeout(`https://some-random-api.com/lyrics?title=${encodeURIComponent(q)}`, 3000);
     if (!res.ok) return null;
     const data = await res.json();
-    if (data && data.lyrics && data.lyrics.length > 50){
-      return { plainLyrics: data.lyrics.trim() };
+    if (data && data.lyrics && data.lyrics.length > 50) return { plainLyrics: data.lyrics.trim() };
+  } catch {}
+  return null;
+}
+
+// --- ChartLyrics ---
+async function tryChartLyrics(title, artist){
+  if (!title || !artist) return null;
+  const target = `http://api.chartlyrics.com/apiv1.asmx/SearchLyricDirect?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(title)}`;
+  const text = await fetchViaAnyProxy(target, 4500);
+  if (!text) return null;
+  const m = text.match(/<Lyric[^>]*>([\s\S]*?)<\/Lyric>/);
+  if (m && m[1] && m[1].trim().length > 50){
+    const plain = m[1]
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .trim();
+    if (plain && !/^sorry|not found|no lyrics/i.test(plain)) return { plainLyrics: plain };
+  }
+  return null;
+}
+
+// --- Genius ---
+async function tryGenius(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://genius.com/api/search/multi?q=${encodeURIComponent(q)}`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 4500);
+    const searchRes = extractJsonFromText(searchText);
+    const sections = searchRes && searchRes.response && searchRes.response.sections;
+    if (!Array.isArray(sections)) return null;
+    let songUrl = null;
+    for (const section of sections){
+      if (section.type === 'song' && Array.isArray(section.hits)){
+        for (const hit of section.hits){
+          if (hit.result && hit.result.url){ songUrl = hit.result.url; break; }
+        }
+      }
+      if (songUrl) break;
+    }
+    if (!songUrl) return null;
+    const htmlText = await fetchViaAnyProxy(songUrl, 5500);
+    if (!htmlText) return null;
+    const lyricsBlocks = htmlText.match(/<div[^>]*data-lyrics-container="true"[^>]*>([\s\S]*?)<\/div>/g);
+    if (!lyricsBlocks) return null;
+    let lyrics = lyricsBlocks.join('\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/\[\d+:\d+[^\]]*\]/g, '')
+      .replace(/\[.*?\]/g, '')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    if (lyrics.length < 50) return null;
+    if (/^(sorry|not found|no lyrics)/i.test(lyrics)) return null;
+    return { plainLyrics: lyrics };
+  } catch { return null; }
+}
+
+// --- Vagalume ---
+async function tryVagalume(title, artist){
+  if (!title) return null;
+  try {
+    const url = `https://api.vagalume.com.br/search.php?art=${encodeURIComponent(artist || '')}&mus=${encodeURIComponent(title)}`;
+    const res = await fetchWithTimeout(url, 3500);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.mus && Array.isArray(data.mus) && data.mus[0] && data.mus[0].text){
+      const lyrics = data.mus[0].text.trim();
+      if (lyrics.length > 50) return { plainLyrics: lyrics };
     }
   } catch {}
   return null;
 }
 
-async function tryChartLyrics(title, artist){
+// --- AZLyrics ---
+async function tryAZLyrics(title, artist){
   if (!title || !artist) return null;
-  const target = `http://api.chartlyrics.com/apiv1.asmx/SearchLyricDirect?artist=${encodeURIComponent(artist)}&song=${encodeURIComponent(title)}`;
   try {
-    const res = await fetchWithTimeout(PROXIES[0](target), 3500);
-    if (!res.ok) return null;
-    const text = await res.text();
-    const m = text.match(/<Lyric[^>]*>([\s\S]*?)<\/Lyric>/);
-    if (m && m[1] && m[1].trim().length > 50){
-      const plain = m[1]
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<[^>]+>/g, '')
-        .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
-        .trim();
-      if (plain && !/^sorry|not found|no lyrics/i.test(plain)) return { plainLyrics: plain };
-    }
-  } catch {}
-  return null;
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://search.azlyrics.com/search.php?q=${encodeURIComponent(q)}`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 5000);
+    if (!searchText) return null;
+    const match = searchText.match(/href="(https:\/\/www\.azlyrics\.com\/lyrics\/[^"]+)"/);
+    if (!match) return null;
+    const songHtml = await fetchViaAnyProxy(match[1], 5500);
+    if (!songHtml) return null;
+    const lyricsMatch = songHtml.match(/<!-- Usage of azlyrics\.com content by any third-party -->([\s\S]*?)<!-- MxM banner -->/);
+    if (!lyricsMatch) return null;
+    let lyrics = lyricsMatch[1]
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    if (lyrics.length < 50) return null;
+    if (/^(sorry|not found|no lyrics)/i.test(lyrics)) return null;
+    return { plainLyrics: lyrics };
+  } catch { return null; }
+}
+
+// --- LyricsFreak ---
+async function tryLyricsFreak(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://www.lyricsfreak.com/search.php?a=search&q=${encodeURIComponent(q)}`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 5000);
+    if (!searchText) return null;
+    const match = searchText.match(/href="(\/lyrics\/[^"]+)"/);
+    if (!match) return null;
+    const songUrl = 'https://www.lyricsfreak.com' + match[1];
+    const songHtml = await fetchViaAnyProxy(songUrl, 5500);
+    if (!songHtml) return null;
+    const lyricsMatch = songHtml.match(/<div[^>]*class="[^"]*text[^"]*"[^>]*>([\s\S]*?)<\/div>/);
+    if (!lyricsMatch) return null;
+    let lyrics = lyricsMatch[1]
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .replace(/\n{3,}/g, '\n\n')
+      .trim();
+    if (lyrics.length < 50) return null;
+    return { plainLyrics: lyrics };
+  } catch { return null; }
+}
+
+// --- Musixmatch ---
+async function tryMusixmatch(title, artist){
+  if (!title) return null;
+  try {
+    const q = [artist, title].filter(Boolean).join(' ').trim();
+    const searchUrl = `https://www.musixmatch.com/search/${encodeURIComponent(q)}`;
+    const searchText = await fetchViaAnyProxy(searchUrl, 5000);
+    if (!searchText) return null;
+    const match = searchText.match(/href="(\/lyrics\/[^"]+)"/);
+    if (!match) return null;
+    const lyricsUrl = 'https://www.musixmatch.com' + match[1];
+    const lyricsHtml = await fetchViaAnyProxy(lyricsUrl, 5500);
+    if (!lyricsHtml) return null;
+    const spans = lyricsHtml.match(/<span[^>]*class="[^"]*lyrics__content__[^"]*"[^>]*>([\s\S]*?)<\/span>/g);
+    if (!spans) return null;
+    let lyrics = spans.join('\n')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<[^>]+>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+      .trim();
+    if (lyrics.length < 50) return null;
+    return { plainLyrics: lyrics };
+  } catch { return null; }
 }
 
 // ========== ПАРАЛЛЕЛЬНЫЙ ПОИСК ==========
 async function searchLyricsParallel(title, artist, duration, token){
   const sources = [
-    { name: 'LRCLIB',       fn: () => tryLrclibGet(title, artist, duration) },
-    { name: 'LRCLIB поиск', fn: () => tryLrclibSearch(title, artist) },
-    { name: 'NetEase',      fn: () => tryNetEase(title, artist) },
-    { name: 'lyrics.ovh',   fn: () => tryLyricsOvh(title, artist) },
-    { name: 'Lyrist',       fn: () => tryLyrist(title, artist) },
-    { name: 'SomeRandomAPI',fn: () => trySomeRandomApi(title, artist) },
-    { name: 'LRCLIB p1',    fn: () => tryLrclibProxyAllOrigins(title, artist, duration) },
-    { name: 'LRCLIB p2',    fn: () => tryLrclibProxyCodeTabs(title, artist, duration) },
-    { name: 'ChartLyrics',  fn: () => tryChartLyrics(title, artist) }
+    { name: 'LRCLIB',        fn: () => tryLrclibGet(title, artist, duration) },
+    { name: 'LRCLIB search', fn: () => tryLrclibSearch(title, artist) },
+    { name: 'LRCLIB proxy',  fn: () => tryLrclibProxy(title, artist, duration) },
+    { name: 'NetEase',       fn: () => tryNetEase(title, artist) },
+    { name: 'QQ Music',      fn: () => tryQQMusic(title, artist) },
+    { name: 'Kugou',         fn: () => tryKugou(title, artist) },
+    { name: 'lyrics.ovh',    fn: () => tryLyricsOvh(title, artist) },
+    { name: 'Lyrist',        fn: () => tryLyrist(title, artist) },
+    { name: 'SomeRandomAPI', fn: () => trySomeRandomApi(title, artist) },
+    { name: 'ChartLyrics',   fn: () => tryChartLyrics(title, artist) },
+    { name: 'Genius',        fn: () => tryGenius(title, artist) },
+    { name: 'Vagalume',      fn: () => tryVagalume(title, artist) },
+    { name: 'AZLyrics',      fn: () => tryAZLyrics(title, artist) },
+    { name: 'LyricsFreak',   fn: () => tryLyricsFreak(title, artist) },
+    { name: 'Musixmatch',    fn: () => tryMusixmatch(title, artist) }
   ];
 
-  console.log(`[lyrics] parallel search: ${sources.length} sources`);
+  console.log(`[lyrics] searching: ${sources.length} sources for "${title}" by "${artist}"`);
   const startTime = Date.now();
 
   return new Promise((resolve) => {
@@ -1943,58 +2166,49 @@ async function searchLyricsParallel(title, artist, duration, token){
       clearTimeout(totalTimer);
       if (plainTimer) clearTimeout(plainTimer);
       const elapsed = Date.now() - startTime;
-      if (result){
-        console.log(`[lyrics] ✓ found in ${elapsed}ms via ${result.source} (${result.kind})`);
-      } else {
-        console.log(`[lyrics] ✗ not found in ${elapsed}ms`);
-      }
+      if (result) console.log(`[lyrics] ✓ ${result.kind} from ${result.source} in ${elapsed}ms`);
+      else console.log(`[lyrics] ✗ not found in ${elapsed}ms`);
       resolve(result);
     };
 
-    // Жёсткий таймаут 4.5 секунды
     const totalTimer = setTimeout(() => {
       if (firstSynced) finish(firstSynced);
       else if (firstPlain) finish(firstPlain);
       else finish(null);
-    }, 4500);
+    }, 6000);
 
-    sources.forEach((src, idx) => {
+    sources.forEach((src) => {
       Promise.resolve()
         .then(() => src.fn())
         .then(result => {
           pending--;
           if (done) return;
           if (token !== karaokeSearchToken) return finish(null);
-
           if (result && result.syncedLyrics){
-            console.log(`[lyrics] synced from ${src.name}`);
+            console.log(`[lyrics] synced: ${src.name}`);
             if (!firstSynced){
               firstSynced = { result, source: src.name, kind: 'synced' };
-              // Synced — мгновенная победа
               finish(firstSynced);
             }
           } else if (result && result.plainLyrics){
-            console.log(`[lyrics] plain from ${src.name}`);
+            console.log(`[lyrics] plain: ${src.name}`);
             if (!firstPlain){
               firstPlain = { result, source: src.name, kind: 'plain' };
-              // Даём 1.5 сек на synced
               if (!plainTimer){
                 plainTimer = setTimeout(() => {
                   if (done) return;
                   if (firstSynced) finish(firstSynced);
                   else if (firstPlain) finish(firstPlain);
                   else if (pending === 0) finish(null);
-                }, 1500);
+                }, 2000);
               }
             }
-          } else {
-            console.log(`[lyrics] miss: ${src.name}`);
           }
         })
         .catch(e => {
           pending--;
           if (done) return;
-          console.log(`[lyrics] error ${src.name}: ${e && e.message}`);
+          if (pending === 0 && !firstSynced && !firstPlain) finish(null);
         });
     });
   });
@@ -2097,7 +2311,6 @@ async function openKaraoke(source){
     return;
   }
 
-  // Параллельный поиск
   isSearchingKaraoke = true;
   karaokeSearchToken++;
   const token = karaokeSearchToken;
